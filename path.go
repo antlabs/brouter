@@ -9,6 +9,7 @@ type segment struct {
 	path      string
 	nodeType  nodeType
 	paramName string
+	handle    HandleFunc
 }
 
 type path struct {

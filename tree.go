@@ -8,7 +8,6 @@ const (
 	wildcard
 )
 
-/*
 type tree struct {
 	root *treeNode
 }
@@ -37,10 +36,20 @@ func (n *treeNode) getChildrenInsert(c byte) (int, *treeNode) {
 	return offset, n.children[offset]
 }
 
+func (n *treeNode) noConflict() {
+}
+
+// 这里分几个状态
+// 找到空的位置可以插入
+// 有共同前缀需要分裂节点
 func (n *treeNode) insert(path string, h HandleFunc) {
 	p := genPath(path, h)
 
 	for _, segment := range p.segments {
+
+		if len(n.segment.path) == 0 {
+			n.noConflict()
+		}
 
 		if segment.nodeType == param || segment.nodeType == wildcard {
 			if n.paramOrWildcard != nil {
@@ -79,9 +88,17 @@ func (n *treeNode) insert(path string, h HandleFunc) {
 	}
 }
 
-func (n *treeNode) lookup(path string, p *Params) {
+func (n *treeNode) lookup(path string, p *Params) (h *HandleFunc) {
 
 	for i := 0; i < len(path); i++ {
+		if len(n.path) > len(path) {
+			return nil
+		}
+
+		if n.path != path[:len(n.path)] {
+			return nil
+		}
+
 		if n.paramOrWildcard != nil {
 			if n.paramOrWildcard.nodeType == param {
 				j := i
@@ -101,4 +118,3 @@ func (n *treeNode) lookup(path string, p *Params) {
 
 	}
 }
-*/

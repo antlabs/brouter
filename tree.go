@@ -96,13 +96,13 @@ func (n *treeNode) lookup(path string, p *Params) (h HandleFunc) {
 			return nil
 		}
 
-		// 当前节点path和需要匹配的路径比较下，如果不相等，返回空handleFunc
+		// 当前节点path和需要匹配的路径比较下，如果不相等，返回空指针
 		if n.path != path[i:len(n.path)] {
 			return nil
 		}
 
-		i += len(n.path) // 跳过n.path的部分
-		if len(n.children) != 0 && n.children[0] != nil {
+		i += len(n.path)                                  // 跳过n.path的部分
+		if len(n.children) != 0 && n.children[0] != nil { //检查参数部分
 			n = n.children[0]
 
 			p.appendKey(n.paramName)

@@ -88,33 +88,53 @@ func (n *treeNode) insert(path string, h HandleFunc) {
 	}
 }
 
-func (n *treeNode) lookup(path string, p *Params) (h *HandleFunc) {
+func (n *treeNode) lookup(path string, p *Params) (h HandleFunc) {
 
-	for i := 0; i < len(path); i++ {
-		if len(n.path) > len(path) {
+	for i := 0; i < len(path); {
+		// 当前节点path大于剩余需要匹配的path，说明路径和该节点不匹配
+		if len(n.path) > len(path[i:]) {
 			return nil
 		}
 
-		if n.path != path[:len(n.path)] {
+		// 当前节点path和需要匹配的路径比较下，如果不相等，返回空handleFunc
+		if n.path != path[i:len(n.path)] {
 			return nil
 		}
 
-		if n.paramOrWildcard != nil {
-			if n.paramOrWildcard.nodeType == param {
+		i += len(n.path) // 跳过n.path的部分
+		if len(n.children) != 0 && n.children[0] != nil {
+			n = n.children[0]
+
+			p.appendKey(n.paramName)
+
+			if n.nodeType == param {
 				j := i
 				for ; j < len(path) && path[j] != '/'; j++ {
 				}
 
+				p.setVal(path[i:j])
+				i = j
 			}
 
-			if n.paramOrWildcard.nodeType == wildcard {
-				p.appendKey(n.paramName)
-				p.setVal(path[j:len(path)])
+			if n.nodeType == wildcard {
+				p.setVal(path[i:len(path)])
+				return n.handle
 			}
 		}
 
 		c := path[i]
 		offset := getCodeOffsetLookup(c)
+		if offset >= len(n.children) {
+			return nil
+		}
+
+		n = n.children[offset]
+		if n == nil {
+			return nil
+		}
+		i++
 
 	}
+
+	return n.handle
 }

@@ -8,6 +8,10 @@ const (
 	wildcard
 )
 
+func (n nodeType) isParamOrWildcard() bool {
+	return n == param || n == wildcard
+}
+
 type tree struct {
 	root *treeNode
 }
@@ -25,18 +29,42 @@ type treeNode struct {
 	segment
 }
 
-func (n *treeNode) getChildrenInsert(c byte) (int, *treeNode) {
+func (n *treeNode) getParamOrWildcard() *treeNode {
+	return n.getChildrenIndexAndMalloc(0)
+}
+
+func (n *treeNode) getChildrenNode(c byte) *treeNode {
 	offset := getCodeOffsetInsert(c)
-	if offset >= len(n.children) {
-		newChildren := make([]*treeNode, offset)
+	return n.getChildrenIndexAndMalloc(offset)
+}
+
+func (n *treeNode) getChildrenIndexAndMalloc(index int) *treeNode {
+	if index >= len(n.children) {
+		newChildren := make([]*treeNode, index)
 		copy(newChildren, n.children)
 		n.children = newChildren
 	}
 
-	return offset, n.children[offset]
+	node := n.children[index]
+	if node == nil {
+		n.children[index] = &treeNode{}
+	}
+	return n.children[index]
 }
 
-func (n *treeNode) noConflict() {
+func (n *treeNode) getNextTreeNode(i int, p path) (nextNode *treeNode) {
+	if i+1 < len(p.segments) {
+		nextSegment := p.segments[i+1]
+		// 判断下个判断插入的节点类型
+		// if 部分是param or wildcard 类型
+		if nextSegment.nodeType.isParamOrWildcard() {
+			nextNode = n.getParamOrWildcard()
+		} else { // 这是普通节点
+			nextNode = n.getChildrenNode(nextSegment.path[0])
+		}
+	}
+
+	return
 }
 
 // 这里分几个状态
@@ -45,32 +73,16 @@ func (n *treeNode) noConflict() {
 func (n *treeNode) insert(path string, h HandleFunc) {
 	p := genPath(path, h)
 
-	for _, segment := range p.segments {
+	for i := 0; i < len(p.segments); i++ {
 
+		segment := p.segments[i]
+
+		nextNode := n.getNextTreeNode(i, p)
+
+		// 如果n.segment.path 为空，就可以直接插入到这个节点
 		if len(n.segment.path) == 0 {
-			n.noConflict()
-		}
-
-		if segment.nodeType == param || segment.nodeType == wildcard {
-			if n.paramOrWildcard != nil {
-				panic("TODO 1, 检查paramName是否一样")
-			}
-
-			n.paramOrWildcard = &treeNode{
-				segment: segment,
-			}
-
-			n = n.paramOrWildcard
-			continue
-		}
-
-		offset, children := n.getChildrenInsert(segment.path[0])
-		if children == nil {
-			n.children[offset] = &treeNode{
-				segment: segment,
-			}
-
-			n = n.children[offset]
+			n.segment = segment
+			n = nextNode
 			continue
 		}
 
@@ -85,6 +97,20 @@ func (n *treeNode) insert(path string, h HandleFunc) {
 			i++
 			j++
 		}
+
+		if i != len(tailPath) {
+		}
+
+		if segment.nodeType.isParamOrWildcard() {
+
+			n.paramOrWildcard = &treeNode{
+				segment: segment,
+			}
+
+			n = n.paramOrWildcard
+			continue
+		}
+
 	}
 }
 

@@ -82,5 +82,6 @@ func genPath(p string, h HandleFunc) (path path) {
 		}
 	}
 
+	path.segments[len(path.segments)-1].handle = h
 	return
 }

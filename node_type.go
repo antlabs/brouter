@@ -1,3 +1,6 @@
+// Apache-2.0 License
+// Copyright [2020] [guonaihong]
+
 package brouter
 
 type nodeType int

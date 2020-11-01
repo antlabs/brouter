@@ -1,31 +1,41 @@
+// Apache-2.0 License
+// Copyright [2020] [guonaihong]
+
 package brouter
 
+// tree
 type tree struct {
 	root *treeNode
 }
 
+// 插入函数
 func (r *tree) insert(path string, h HandleFunc) {
 	r.root.insert(path, h)
 }
 
+// 查找函数
 func (r *tree) lookup(path string, p *Params) {
 	r.root.lookup(path, p)
 }
 
+// treeNode，查找树node
 type treeNode struct {
 	children []*treeNode
 	segment
 }
 
+// 获取param or wildcard 节点
 func (n *treeNode) getParamOrWildcard() *treeNode {
 	return n.getChildrenIndexAndMalloc(0)
 }
 
+// 获取子节点
 func (n *treeNode) getChildrenNode(c byte) *treeNode {
 	offset := getCodeOffsetInsert(c)
 	return n.getChildrenIndexAndMalloc(offset)
 }
 
+// 有子节点就返回，没有先分配空间然后返回指针
 func (n *treeNode) getChildrenIndexAndMalloc(index int) *treeNode {
 	if index >= len(n.children) {
 		newChildren := make([]*treeNode, index)
@@ -41,10 +51,10 @@ func (n *treeNode) getChildrenIndexAndMalloc(index int) *treeNode {
 }
 
 func (n *treeNode) getNextTreeNode(i int, p path) (nextNode *treeNode) {
-	if i+1 < len(p.segments) {
-		nextSegment := p.segments[i+1]
+	if i < len(p.segments) {
+		nextSegment := p.segments[i]
 		// 判断下个判断插入的节点类型
-		// if 部分是param or wildcard 类型
+		// 如果是param or wildcard 类型
 		if nextSegment.nodeType.isParamOrWildcard() {
 			nextNode = n.getParamOrWildcard()
 		} else { // 这是普通节点
@@ -55,9 +65,74 @@ func (n *treeNode) getNextTreeNode(i int, p path) (nextNode *treeNode) {
 	return
 }
 
-// 这里分几个状态
-// 找到空的位置可以插入
-// 有共同前缀需要分裂节点
+func (n *treeNode) directInsert(segment segment, nextNode *treeNode, i int, p path) (*treeNode, bool) {
+	// 普通节点
+	if segment.nodeType.isOrdinary() {
+		n.segment = segment
+		return nextNode, true
+	}
+
+	// 变量或者通配符节点
+	if segment.nodeType.isParamOrWildcard() {
+		n.path = segment.path
+		paramOrWildcard := n.getParamOrWildcard()
+		paramOrWildcard.segment = segment
+		paramOrWildcard.path = ""
+		return paramOrWildcard.getNextTreeNode(i, p), true
+	}
+	return nil, false
+}
+
+func (n *treeNode) splitNode(sm segment, i int, p path) *treeNode {
+	//分裂, 找到共同前缀
+	// 特殊情况已经被剔除掉，这里是需要新加子节点的情况
+	tailPath := n.path
+	insertPath := sm.path
+	i, j := 0, 0
+	for i < len(tailPath) && j < len(insertPath) {
+		if tailPath[i] != insertPath[j] {
+			break
+		}
+		i++
+		j++
+	}
+
+	// 儿子变孙子
+	grandson := n.children
+	n.children = make([]*treeNode, 0, 1)
+
+	splitSegment := segment{
+		path:     n.path[i:],
+		handle:   n.handle,
+		nodeType: n.nodeType,
+	}
+
+	n.path = n.path[:i]
+	n.handle = nil
+
+	//TODO, 待插入segment如果是特殊节点，和n.path有重合的路径(n.path是普通路径), 直接panic
+
+	if len(tailPath[i:]) > 0 {
+		nextNode := n.getChildrenNode(tailPath[i])
+		nextNode.children = grandson
+		nextNode.segment = splitSegment
+	} else {
+		panic("splitNode:This is not taken into account")
+	}
+
+	if len(insertPath[j:]) > 0 {
+		nextNode := n.getChildrenNode(tailPath[j])
+		sm.path = insertPath[j:]
+		nextNode.segment = sm
+		return nextNode.getNextTreeNode(i+1, p)
+	}
+
+	n.handle = sm.handle
+
+	return n.getNextTreeNode(i+1, p)
+}
+
+// 这里分情况讨论
 func (n *treeNode) insert(path string, h HandleFunc) {
 	p := genPath(path, h)
 
@@ -65,45 +140,44 @@ func (n *treeNode) insert(path string, h HandleFunc) {
 
 		segment := p.segments[i]
 
-		nextNode := n.getNextTreeNode(i, p)
+		nextNode := n.getNextTreeNode(i+1, p)
 
-		// 如果n.segment.path 为空，就可以直接插入到这个节点
-		// 注意:区分普通节点和变量节点
-		if n.nodeType.isEmpty() {
-			// 普通节点
-			if segment.nodeType.isOrdinary() {
-				n.segment = segment
+		for {
+			// 1.直接插入
+			// 如果n.segment.isOrdinary() 为空，就可以直接插入到这个节点
+			// 注意:区分普通节点和变量节点
+			if n.nodeType.isEmpty() {
+				if next, ok := n.directInsert(segment, nextNode, i+1, p); ok {
+					nextNode = next
+					break
+				}
+
+				panic("Unknown node type")
+			}
+
+			// 3,4,5 考虑下变量和可变参数
+			// 3.不需要分裂 node, 当前需要插入的path和n.path相同
+			if n.equal(segment) {
+				if n.handle == nil {
+					n.handle = segment.handle
+				}
 				n = nextNode
-				continue
-			}
-
-			// 变量或者通配符节点
-			if segment.nodeType.isParamOrWildcard() {
-				n.path = segment.path
-				paramOrWildcard := n.getParamOrWildcard()
-				paramOrWildcard.segment = segment
-				paramOrWildcard.path = ""
-				n = paramOrWildcard.getNextTreeNode(i, p)
-				continue
-			}
-		}
-
-		//分裂, 找到共同前缀
-		tailPath := n.path
-		insertPath := segment.path
-		i, j := 0, 0
-		for i < len(tailPath) && j < len(insertPath) {
-			if tailPath[i] != insertPath[j] {
 				break
 			}
-			i++
-			j++
+
+			// 4.不需要分裂 node, 当前需要插入的path包含n.path
+			// 这种情况比较复杂, 剔除重复前缀元素，重走上面流程
+			if len(n.path) < len(segment.path) && n.path == segment.path[:len(n.path)] {
+				segment.path = segment.path[len(n.path):]
+				n = n.getNextTreeNode(i, p)
+				continue
+			}
+
+			// 5.分裂节点再插入
+			n.splitNode(segment, i, p)
+			break
 		}
 
-		if i != len(tailPath) {
-		}
-
-		// TODO 处理变量节点
 	}
 }
 

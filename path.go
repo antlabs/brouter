@@ -1,3 +1,6 @@
+// Apache-2.0 License
+// Copyright [2020] [guonaihong]
+
 package brouter
 
 import (
@@ -10,6 +13,11 @@ type segment struct {
 	nodeType  nodeType
 	paramName string
 	handle    HandleFunc
+}
+
+func (s *segment) equal(s1 segment) bool {
+	return s.path == s1.path && s.nodeType == s1.nodeType && s.paramName == s.paramName
+
 }
 
 type path struct {

@@ -3,10 +3,19 @@ package brouter
 type nodeType int
 
 const (
-	ordinary nodeType = iota
+	empty nodeType = iota
+	ordinary
 	param
 	wildcard
 )
+
+func (n nodeType) isEmpty() bool {
+	return n == empty
+}
+
+func (n nodeType) isOrdinary() bool {
+	return n == ordinary
+}
 
 func (n nodeType) isParamOrWildcard() bool {
 	return n == param || n == wildcard
@@ -80,10 +89,24 @@ func (n *treeNode) insert(path string, h HandleFunc) {
 		nextNode := n.getNextTreeNode(i, p)
 
 		// 如果n.segment.path 为空，就可以直接插入到这个节点
-		if len(n.segment.path) == 0 {
-			n.segment = segment
-			n = nextNode
-			continue
+		// 注意:区分普通节点和变量节点
+		if n.nodeType.isEmpty() {
+			// 普通节点
+			if segment.nodeType.isOrdinary() {
+				n.segment = segment
+				n = nextNode
+				continue
+			}
+
+			// 变量或者通配符节点
+			if segment.nodeType.isParamOrWildcard() {
+				n.path = segment.path
+				paramOrWildcard := n.getParamOrWildcard()
+				paramOrWildcard.segment = segment
+				paramOrWildcard.path = ""
+				n = paramOrWildcard.getNextTreeNode(i, p)
+				continue
+			}
 		}
 
 		//分裂, 找到共同前缀
@@ -101,16 +124,7 @@ func (n *treeNode) insert(path string, h HandleFunc) {
 		if i != len(tailPath) {
 		}
 
-		if segment.nodeType.isParamOrWildcard() {
-
-			n.paramOrWildcard = &treeNode{
-				segment: segment,
-			}
-
-			n = n.paramOrWildcard
-			continue
-		}
-
+		// TODO 处理变量节点
 	}
 }
 

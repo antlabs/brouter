@@ -18,6 +18,7 @@ func Test_SplitPath(t *testing.T) {
 		{path: "/a/b/c", need: []string{"/a", "/b", "/c"}},
 		{path: "/a/b/:name", need: []string{"/a", "/b", "/:name"}},
 		{path: "/a/b/c/:name/c/d/:hello", need: []string{"/a", "/b", "/c", "/:name", "/c", "/d", "/:hello"}},
+		{path: "/teams/:id/repos", need: []string{"/teams", "/:id", "/repos"}},
 	}
 
 	for _, test := range ts {
@@ -33,6 +34,24 @@ type testGenPath struct {
 
 func Test_GenPath(t *testing.T) {
 	ts := []testGenPath{
+		{
+			path: "/teams/:id/repos",
+			segments: []segment{
+				{
+					path:     "/teams",
+					nodeType: ordinary,
+				},
+				{
+					path:      "/",
+					nodeType:  param,
+					paramName: "id",
+				},
+				{
+					path:     "/repos",
+					nodeType: ordinary,
+				},
+			},
+		},
 		{
 			path: "/a/b/c/:name/c/d/:hello",
 			segments: []segment{

@@ -20,6 +20,15 @@ func (ps Params) ByName(name string) string {
 	return ""
 }
 
+// 深度拷贝
+func (ps Params) Clone() Params {
+	rv := make(Params, len(ps))
+	for i := range ps {
+		rv[i] = ps[i]
+	}
+	return rv
+}
+
 func (p *Params) appendKey(key string) {
 
 	*p = append(*p, Param{Key: key})

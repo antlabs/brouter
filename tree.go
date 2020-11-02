@@ -3,19 +3,32 @@
 
 package brouter
 
+import (
+	"fmt"
+	"sync"
+)
+
 // tree
 type tree struct {
-	root *treeNode
+	root      *treeNode
+	paramPool sync.Pool
+	maxParam  int
+}
+
+func newTree() *tree {
+	return &tree{root: &treeNode{}}
 }
 
 // 插入函数
 func (r *tree) insert(path string, h HandleFunc) {
-	r.root.insert(path, h)
+	p := genPath(path, h)
+	r.changePool(&p)
+	r.root.insert(path, h, p)
 }
 
 // 查找函数
-func (r *tree) lookup(path string, p *Params) {
-	r.root.lookup(path, p)
+func (r *tree) lookup(path string, p *Params) HandleFunc {
+	return r.root.lookup(path, p)
 }
 
 // treeNode，查找树node
@@ -38,7 +51,7 @@ func (n *treeNode) getChildrenNode(c byte) *treeNode {
 // 有子节点就返回，没有先分配空间然后返回指针
 func (n *treeNode) getChildrenIndexAndMalloc(index int) *treeNode {
 	if index >= len(n.children) {
-		newChildren := make([]*treeNode, index)
+		newChildren := make([]*treeNode, index+1)
 		copy(newChildren, n.children)
 		n.children = newChildren
 	}
@@ -53,37 +66,36 @@ func (n *treeNode) getChildrenIndexAndMalloc(index int) *treeNode {
 func (n *treeNode) getNextTreeNode(i int, p path) (nextNode *treeNode) {
 	if i < len(p.segments) {
 		nextSegment := p.segments[i]
-		// 判断下个判断插入的节点类型
-		// 如果是param or wildcard 类型
-		if nextSegment.nodeType.isParamOrWildcard() {
-			nextNode = n.getParamOrWildcard()
-		} else { // 这是普通节点
-			nextNode = n.getChildrenNode(nextSegment.path[0])
-		}
+		nextNode = n.getChildrenNode(nextSegment.path[0])
 	}
 
 	return
 }
 
-func (n *treeNode) directInsert(segment segment, nextNode *treeNode, i int, p path) (*treeNode, bool) {
+func (n *treeNode) directInsert(segment segment, i int, p path) (*treeNode, bool) {
 	// 普通节点
 	if segment.nodeType.isOrdinary() {
 		n.segment = segment
-		return nextNode, true
+
+		return n.getNextTreeNode(i+1, p), true
 	}
 
 	// 变量或者通配符节点
 	if segment.nodeType.isParamOrWildcard() {
 		n.path = segment.path
+		n.nodeType = ordinary
+
 		paramOrWildcard := n.getParamOrWildcard()
 		paramOrWildcard.segment = segment
 		paramOrWildcard.path = ""
+
 		return paramOrWildcard.getNextTreeNode(i, p), true
 	}
+
 	return nil, false
 }
 
-func (n *treeNode) splitNode(sm segment, i int, p path) *treeNode {
+func (n *treeNode) splitNode(sm segment, segIndex int, p path) *treeNode {
 	//分裂, 找到共同前缀
 	// 特殊情况已经被剔除掉，这里是需要新加子节点的情况
 	tailPath := n.path
@@ -117,55 +129,52 @@ func (n *treeNode) splitNode(sm segment, i int, p path) *treeNode {
 		nextNode.children = grandson
 		nextNode.segment = splitSegment
 	} else {
-		panic("splitNode:This is not taken into account")
+		panic(fmt.Sprintf("splitNode:This is not taken into account:tailPath:%s", tailPath))
 	}
 
 	if len(insertPath[j:]) > 0 {
-		nextNode := n.getChildrenNode(tailPath[j])
+		nextNode := n.getChildrenNode(insertPath[j])
 		sm.path = insertPath[j:]
 		nextNode.segment = sm
-		return nextNode.getNextTreeNode(i+1, p)
+		return nextNode.getNextTreeNode(segIndex, p)
 	}
 
 	n.handle = sm.handle
 
-	return n.getNextTreeNode(i+1, p)
+	return n.getNextTreeNode(segIndex, p)
 }
 
 // 这里分情况讨论
-func (n *treeNode) insert(path string, h HandleFunc) {
-	p := genPath(path, h)
+func (n *treeNode) insert(path string, h HandleFunc, p path) {
 
 	for i := 0; i < len(p.segments); i++ {
 
 		segment := p.segments[i]
-
-		nextNode := n.getNextTreeNode(i+1, p)
 
 		for {
 			// 1.直接插入
 			// 如果n.segment.isOrdinary() 为空，就可以直接插入到这个节点
 			// 注意:区分普通节点和变量节点
 			if n.nodeType.isEmpty() {
-				if next, ok := n.directInsert(segment, nextNode, i+1, p); ok {
-					nextNode = next
+				if next, ok := n.directInsert(segment, i+1, p); ok {
+					n = next
 					break
 				}
 
 				panic("Unknown node type")
 			}
 
-			// 3,4,5 考虑下变量和可变参数
-			// 3.不需要分裂 node, 当前需要插入的path和n.path相同
+			// 2,3,4 考虑下变量和可变参数
+			// 2.不需要分裂 node, 当前需要插入的path和n.path相同
 			if n.equal(segment) {
 				if n.handle == nil {
 					n.handle = segment.handle
 				}
-				n = nextNode
+				n = n.getNextTreeNode(i+1, p)
 				break
 			}
 
-			// 4.不需要分裂 node, 当前需要插入的path包含n.path
+			// 3.不需要分裂 node, 当前需要插入的path包含n.path
 			// 这种情况比较复杂, 剔除重复前缀元素，重走上面流程
 			if len(n.path) < len(segment.path) && n.path == segment.path[:len(n.path)] {
 				segment.path = segment.path[len(n.path):]
@@ -173,29 +182,37 @@ func (n *treeNode) insert(path string, h HandleFunc) {
 				continue
 			}
 
-			// 5.分裂节点再插入
-			n.splitNode(segment, i, p)
+			// 4.分裂节点再插入
+			n.splitNode(segment, i+1, p)
 			break
 		}
 
 	}
 }
 
+// 判断变量节点
+func (n *treeNode) hasParamOrWildcard() bool {
+	return len(n.children) != 0 &&
+		n.children[0] != nil &&
+		n.children[0].nodeType.isParamOrWildcard()
+}
+
+func (n *treeNode) getChildrenIndex(c byte) *treeNode {
+	offset := getCodeOffsetLookup(c)
+	if offset >= len(n.children) {
+		return nil
+	}
+
+	return n.children[offset]
+
+}
+
 func (n *treeNode) lookup(path string, p *Params) (h HandleFunc) {
 
 	for i := 0; i < len(path); {
-		// 当前节点path大于剩余需要匹配的path，说明路径和该节点不匹配
-		if len(n.path) > len(path[i:]) {
-			return nil
-		}
 
-		// 当前节点path和需要匹配的路径比较下，如果不相等，返回空指针
-		if n.path != path[i:len(n.path)] {
-			return nil
-		}
-
-		i += len(n.path)                                  // 跳过n.path的部分
-		if len(n.children) != 0 && n.children[0] != nil { //检查参数部分
+		// 处理检查参数部分
+		if n.hasParamOrWildcard() {
 			n = n.children[0]
 
 			p.appendKey(n.paramName)
@@ -207,6 +224,16 @@ func (n *treeNode) lookup(path string, p *Params) (h HandleFunc) {
 
 				p.setVal(path[i:j])
 				i = j
+
+				if j == len(path) {
+					return n.handle
+				}
+
+				n = n.getChildrenIndex(path[i])
+				if n == nil {
+					return nil
+				}
+				continue
 			}
 
 			if n.nodeType == wildcard {
@@ -215,19 +242,47 @@ func (n *treeNode) lookup(path string, p *Params) (h HandleFunc) {
 			}
 		}
 
-		c := path[i]
-		offset := getCodeOffsetLookup(c)
-		if offset >= len(n.children) {
+		// 当前节点path大于剩余需要匹配的path，说明路径和该节点不匹配
+		if len(n.path) > len(path[i:]) {
 			return nil
 		}
 
-		n = n.children[offset]
-		if n == nil {
+		// 当前节点path和需要匹配的路径比较下，如果不相等，返回空指针
+		if n.path != path[i:i+len(n.path)] {
 			return nil
 		}
+
+		i += len(n.path) // 跳过n.path的部分
+		if i == len(path) {
+			return n.handle
+		}
+
+		c := path[i]
+		if n = n.getChildrenIndex(c); n == nil {
+			return nil
+		}
+
 		i++
 
 	}
 
 	return n.handle
+}
+
+func (t *tree) changePool(p *path) {
+	if t.paramPool.New == nil {
+		t.paramPool.New = func() interface{} {
+			p := make(Params, 0, 0)
+			return &p
+		}
+	}
+
+	if p.maxParam > t.maxParam {
+		t.maxParam = p.maxParam
+		t.paramPool.New = func() interface{} {
+			p := make(Params, 0, t.maxParam)
+			return &p
+		}
+	}
+
 }

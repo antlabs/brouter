@@ -12,6 +12,21 @@ const (
 	wildcard
 )
 
+func (n nodeType) String() string {
+	switch n {
+	case empty:
+		return "empty"
+	case ordinary:
+		return "ordinary"
+	case param:
+		return "param"
+	case wildcard:
+		return "wildcard"
+	}
+
+	return "unknown"
+}
+
 func (n nodeType) isEmpty() bool {
 	return n == empty
 }

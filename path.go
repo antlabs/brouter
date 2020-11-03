@@ -75,8 +75,11 @@ func genPath(p string, h HandleFunc) (path path) {
 				panic(fmt.Sprintf("Parameter cannot be empty path:%s", p))
 			}
 
-			prevPath := genPrevPath(paths, prevIndex, i)
-			path.segments = append(path.segments, segment{path: prevPath, nodeType: ordinary})
+			if prevIndex != i {
+				prevPath := genPrevPath(paths, prevIndex, i)
+
+				path.segments = append(path.segments, segment{path: prevPath, nodeType: ordinary})
+			}
 
 			nType := param
 			if v[0] == '*' {
@@ -91,6 +94,7 @@ func genPath(p string, h HandleFunc) (path path) {
 			}
 
 			path.segments = append(path.segments, segment{path: "/", nodeType: nType, paramName: v[2:len(v)]})
+
 			prevIndex = i + 1
 			path.maxParam++
 		}

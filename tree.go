@@ -123,6 +123,8 @@ func (n *treeNode) splitNode(sm segment, segIndex int, p path) *treeNode {
 	n.handle = nil
 
 	//TODO, 待插入segment如果是特殊节点，和n.path有重合的路径(n.path是普通路径), 直接panic
+	// 1. n 是特殊节点，insertPath是普通节点
+	// 2. n 是普通节点，insertPath是特殊节点
 
 	if len(tailPath[i:]) > 0 {
 		nextNode := n.getChildrenNode(tailPath[i])
@@ -139,6 +141,7 @@ func (n *treeNode) splitNode(sm segment, segIndex int, p path) *treeNode {
 		return nextNode.getNextTreeNode(segIndex, p)
 	}
 
+	// insertPath 为0的情况
 	n.handle = sm.handle
 
 	return n.getNextTreeNode(segIndex, p)
@@ -183,7 +186,8 @@ func (n *treeNode) insert(path string, h HandleFunc, p path) {
 			}
 
 			// 4.分裂节点再插入
-			n.splitNode(segment, i+1, p)
+
+			n = n.splitNode(segment, i+1, p)
 			break
 		}
 
@@ -207,12 +211,54 @@ func (n *treeNode) getChildrenIndex(c byte) *treeNode {
 
 }
 
+func (n *treeNode) debug() {
+	fmt.Printf("\n %p, ============== start treeNode ######\n", n)
+	fmt.Printf("	n.path:%s\n", n.path)
+	fmt.Printf("	children: ")
+	for i := 0; i < len(n.children); i++ {
+		fmt.Printf("%p ", n.children[i])
+	}
+	fmt.Printf("\n")
+
+	fmt.Printf("	char    : [")
+	for i := 0; i < len(n.children); i++ {
+		fmt.Printf("%c, ", getOffsetToChar(i))
+	}
+	fmt.Printf("]\n")
+	fmt.Printf(" %p, ==============   end treeNode ######\n", n)
+}
+
+func (n *treeNode) checkPath(j *int, path string) (h HandleFunc, quit bool) {
+	i := *j
+	// 当前节点path大于剩余需要匹配的path，说明路径和该节点不匹配
+	if len(n.path) > len(path[i:]) {
+		return nil, true
+	}
+
+	// 当前节点path和需要匹配的路径比较下，如果不相等，返回空指针
+	if n.path != path[i:i+len(n.path)] {
+		return nil, true
+	}
+
+	*j += len(n.path) // 跳过n.path的部分
+
+	if *j == len(path) {
+		return n.handle, true
+	}
+
+	return nil, false
+}
+
 func (n *treeNode) lookup(path string, p *Params) (h HandleFunc) {
 
 	for i := 0; i < len(path); {
 
-		// 处理检查参数部分
+		n.debug()
+
 		if n.hasParamOrWildcard() {
+			if h, quit := n.checkPath(&i, path); quit {
+				return h
+			}
 			n = n.children[0]
 
 			p.appendKey(n.paramName)
@@ -242,19 +288,8 @@ func (n *treeNode) lookup(path string, p *Params) (h HandleFunc) {
 			}
 		}
 
-		// 当前节点path大于剩余需要匹配的path，说明路径和该节点不匹配
-		if len(n.path) > len(path[i:]) {
-			return nil
-		}
-
-		// 当前节点path和需要匹配的路径比较下，如果不相等，返回空指针
-		if n.path != path[i:i+len(n.path)] {
-			return nil
-		}
-
-		i += len(n.path) // 跳过n.path的部分
-		if i == len(path) {
-			return n.handle
+		if h, quit := n.checkPath(&i, path); quit {
+			return h
 		}
 
 		c := path[i]
@@ -262,7 +297,7 @@ func (n *treeNode) lookup(path string, p *Params) (h HandleFunc) {
 			return nil
 		}
 
-		i++
+		//i++
 
 	}
 

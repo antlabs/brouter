@@ -75,6 +75,38 @@ func Test_GenPath(t *testing.T) {
 				},
 			},
 		},
+		{
+			path: "/repos/:owner/:repo/pulls/:number/files",
+			segments: []segment{
+				{
+					path:     "/repos",
+					nodeType: ordinary,
+				},
+				{
+					path:      "/",
+					nodeType:  param,
+					paramName: "owner",
+				},
+				{
+					path:      "/",
+					nodeType:  param,
+					paramName: "repo",
+				},
+				{
+					path:     "/pulls",
+					nodeType: ordinary,
+				},
+				{
+					path:      "/",
+					nodeType:  param,
+					paramName: "number",
+				},
+				{
+					path:     "/files",
+					nodeType: ordinary,
+				},
+			},
+		},
 	}
 
 	for _, test := range ts {

@@ -67,9 +67,9 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			tree.paramPool.Put(p)
 		}
 
-		handle := tree.lookup(path, p2)
+		handle := tree.lookup(path, nil)
 		if handle != nil {
-			handle(w, req, *p2)
+			handle(w, req, nil)
 			put(p2)
 			return
 		}

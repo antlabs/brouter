@@ -12,40 +12,36 @@ func Test_github_Param1(t *testing.T) {
 			paramKey:   []string{"id"},
 			paramValue: []string{"antlabs"},
 		},
-		/*
-			{
-				insertPath: "/teams/:id/repos/:owner/:repo",
-				lookupPath: "/teams/antlabs-aaa/repos/guonaihong/baserouter-aaa",
-				paramKey:   []string{"id", "owner", "repo"},
-				paramValue: []string{"antlabs-aaa", "guonaihong", "baserouter-aaa"},
-			},
-		*/
+		{
+			insertPath: "/teams/:id/repos/:owner/:repo",
+			lookupPath: "/teams/antlabs-aaa/repos/guonaihong/baserouter-aaa",
+			paramKey:   []string{"id", "owner", "repo"},
+			paramValue: []string{"antlabs-aaa", "guonaihong", "baserouter-aaa"},
+		},
 		{
 			insertPath: "/repos/:owner/:repo/pulls/:number/files",
 			lookupPath: "/repos/guonaihong/baserouter/pulls/1/files",
 			paramKey:   []string{"owner", "repo", "number"},
 			paramValue: []string{"guonaihong", "baserouter", "1"},
 		},
-		/*
-			{
-				insertPath: "/repos/:owner/:repo/pulls/:number/merge",
-				lookupPath: "/repos/NaihongGuo/deepcopy/pulls/2/merge",
-				paramKey:   []string{"owner", "repo", "number"},
-				paramValue: []string{"NaihongGuo", "deepcopy", "2"}},
-			{
-				insertPath: "/repos/:owner/:repo/pulls/:number/comments",
-				lookupPath: "/repos/guonh/timer/pulls/3/comments",
-				paramKey:   []string{"owner", "repo", "number"},
-				paramValue: []string{"guonh", "timer", "3"},
-			},
-		*/
+		{
+			insertPath: "/repos/:owner/:repo/pulls/:number/merge",
+			lookupPath: "/repos/NaihongGuo/deepcopy/pulls/2/merge",
+			paramKey:   []string{"owner", "repo", "number"},
+			paramValue: []string{"NaihongGuo", "deepcopy", "2"},
+		},
+		{
+			insertPath: "/repos/:owner/:repo/pulls/:number/comments",
+			lookupPath: "/repos/guonh/timer/pulls/3/comments",
+			paramKey:   []string{"owner", "repo", "number"},
+			paramValue: []string{"guonh", "timer", "3"},
+		},
 	}
 
 	tc.run(t)
 }
 
-/*
-func Test_github_lookupAndInsertCase3_Param3(t *testing.T) {
+func Test_github_Param2(t *testing.T) {
 	tc := testCases{
 		{
 			insertPath: "/authorizations/:id",
@@ -70,7 +66,7 @@ func Test_github_lookupAndInsertCase3_Param3(t *testing.T) {
 	tc.run(t)
 }
 
-func Test_github_lookupAndInsertCase3_Param2(t *testing.T) {
+func Test_github_Param3(t *testing.T) {
 
 	tc := testCases{
 		{
@@ -91,7 +87,7 @@ func Test_github_lookupAndInsertCase3_Param2(t *testing.T) {
 }
 
 // tail里面是长的，insert里面是短的
-func Test_github_lookupAndInsertCase3_Param4(t *testing.T) {
+func Test_github_Param4(t *testing.T) {
 	tc := testCases{
 		{
 			insertPath: "/repos/:owner/:repo/commits/:what/comments",
@@ -110,7 +106,7 @@ func Test_github_lookupAndInsertCase3_Param4(t *testing.T) {
 	tc.run(t)
 }
 
-func Test_github_lookupAndInsertCase4_Param(t *testing.T) {
+func Test_github_Param5(t *testing.T) {
 	tc := testCases{
 		{
 			insertPath: "/authorizations",
@@ -147,7 +143,7 @@ func Test_github_lookupAndInsertCase4_Param(t *testing.T) {
 	tc.run(t)
 }
 
-func Test_github_lookupAndInsertCase4_Param1(t *testing.T) {
+func Test_github_Param6(t *testing.T) {
 	tc := testCases{
 		{
 			insertPath: "/authorizations",
@@ -172,7 +168,7 @@ func Test_github_lookupAndInsertCase4_Param1(t *testing.T) {
 	tc.run(t)
 }
 
-func Test_github_lookupAndInsertCase4_Param2(t *testing.T) {
+func Test_github_Param7(t *testing.T) {
 	tc := testCases{
 		{
 			insertPath: "/users/:user/events/public",
@@ -245,7 +241,7 @@ func Test_github_lookupAndInsertCase4_Param2(t *testing.T) {
 	tc.run(t)
 }
 
-func Test_github_lookupAndInsertCase4_Param3(t *testing.T) {
+func Test_github_Param8(t *testing.T) {
 	tc := testCases{
 		{
 			insertPath: "/authorizations",
@@ -303,7 +299,7 @@ func Test_github_lookupAndInsertCase4_Param3(t *testing.T) {
 		},
 		{
 			insertPath: "/users/:user/events/public",
-			lookupPath: "/users/:user/events/public",
+			lookupPath: "/users/guonaihong/events/public",
 			paramKey:   []string{"user"},
 			paramValue: []string{"guonaihong"},
 		},
@@ -317,4 +313,3 @@ func Test_github_lookupAndInsertCase4_Param3(t *testing.T) {
 
 	tc.run(t)
 }
-*/

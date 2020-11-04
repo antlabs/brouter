@@ -70,7 +70,7 @@ func genPath(p string, h HandleFunc) (path path) {
 			panic("TODO panic")
 		}
 
-		if v[1] == ':' || v[1] == '*' {
+		if len(v) >= 2 && (v[1] == ':' || v[1] == '*') {
 			if len(v) == 1 {
 				panic(fmt.Sprintf("Parameter cannot be empty path:%s", p))
 			}

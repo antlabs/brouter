@@ -39,7 +39,7 @@ func (tcs *testCases) run(t *testing.T) {
 			handleToUint := *(*uintptr)(unsafe.Pointer(&h))
 			assert.NotEqual(t, handleToUint, uintptr(0), fmt.Sprintf("lookup word(%s)", tc.lookupPath))
 
-			fmt.Printf("testCases.run return h address:%p\n", h)
+			fmt.Printf("testCases.run return h address:%x\n", handleToUint)
 			h(nil, nil, nil)
 			b := assert.Equal(t, done, k+1)
 			if !b {

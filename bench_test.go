@@ -27,32 +27,28 @@ type route struct {
 // http://developer.github.com/v3/
 var githubAPI = []route{
 	// OAuth Authorizations
+	{"GET", "/authorizations"},
 	/*
-			{"GET", "/authorizations"},
-			{"GET", "/authorizations/:id"},
-			{"POST", "/authorizations"},
-			{"PUT", "/authorizations/clients/:client_id"},
+		//{"GET", "/authorizations/:id"},
+		{"POST", "/authorizations"},
+		{"PUT", "/authorizations/clients/:client_id"},
 
-			{"PATCH", "/authorizations/:id"},
-			{"DELETE", "/authorizations/:id"},
-			{"GET", "/applications/:client_id/tokens/:access_token"},
-			{"DELETE", "/applications/:client_id/tokens"},
-			{"DELETE", "/applications/:client_id/tokens/:access_token"},
+		{"PATCH", "/authorizations/:id"},
+		{"DELETE", "/authorizations/:id"},
+		{"GET", "/applications/:client_id/tokens/:access_token"},
+		{"DELETE", "/applications/:client_id/tokens"},
+		{"DELETE", "/applications/:client_id/tokens/:access_token"},
 
 		// Activity
 		{"GET", "/events"},
 		{"GET", "/repos/:owner/:repo/events"},
 		{"GET", "/networks/:owner/:repo/events"},
 		{"GET", "/orgs/:org/events"},
-	*/
 
-	/*
 		{"GET", "/users/:user/received_events"},
 		{"GET", "/users/:user/received_events/public"},
 		{"GET", "/users/:user/events"},
-	*/
-	{"GET", "/users/:user/events/public"},
-	/*
+		//{"GET", "/users/:user/events/public"},
 		{"GET", "/users/:user/events/orgs/:org"},
 		{"GET", "/feeds"},
 		//{"GET", "/notifications"},
@@ -68,8 +64,6 @@ var githubAPI = []route{
 		{"GET", "/users/:user/starred"},
 		{"GET", "/user/starred"},
 		{"GET", "/user/starred/:owner/:repo"},
-	*/
-	/*
 		{"PUT", "/user/starred/:owner/:repo"},
 		{"DELETE", "/user/starred/:owner/:repo"},
 		{"GET", "/repos/:owner/:repo/subscribers"},

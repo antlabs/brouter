@@ -238,36 +238,27 @@ func (n *treeNode) getChildrenIndex(c byte) *treeNode {
 
 }
 
-func (n *treeNode) checkPath(j *int, path string) (h HandleFunc, quit bool) {
-
-	i := *j
-	// 当前节点path大于剩余需要匹配的path，说明路径和该节点不匹配
-	if len(n.path) > len(path[i:]) {
-		return nil, true
-	}
-
-	// 当前节点path和需要匹配的路径比较下，如果不相等，返回空指针
-	if n.path != path[i:i+len(n.path)] {
-		return nil, true
-	}
-
-	*j += len(n.path) // 跳过n.path的部分
-
-	if *j == len(path) {
-		return n.handle, true
-	}
-
-	return nil, false
-}
-
 func (n *treeNode) lookup(path string, p *Params) (h HandleFunc) {
 
 	for i := 0; i < len(path); {
 
-		if h, quit := n.checkPath(&i, path); quit {
-			return h
+		// 当前节点path大于剩余需要匹配的path，说明路径和该节点不匹配
+		if len(n.path) > len(path[i:]) {
+			return nil
 		}
 
+		// 当前节点path和需要匹配的路径比较下，如果不相等，返回空指针
+		if n.path != path[i:i+len(n.path)] {
+			return nil
+		}
+
+		i += len(n.path) // 跳过n.path的部分
+
+		if i == len(path) {
+			return n.handle
+		}
+
+		// 普通节点
 		if !n.haveParamWildcardChild {
 			c := path[i]
 			if n = n.getChildrenIndex(c); n == nil {

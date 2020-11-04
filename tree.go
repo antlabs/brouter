@@ -264,13 +264,11 @@ func (n *treeNode) lookup(path string, p *Params) (h HandleFunc) {
 
 	for i := 0; i < len(path); {
 
-		//n.debug()
+		if h, quit := n.checkPath(&i, path); quit {
+			return h
+		}
 
 		if !n.haveParamWildcardChild {
-			if h, quit := n.checkPath(&i, path); quit {
-				return h
-			}
-
 			c := path[i]
 			if n = n.getChildrenIndex(c); n == nil {
 				return nil
@@ -279,10 +277,6 @@ func (n *treeNode) lookup(path string, p *Params) (h HandleFunc) {
 		}
 
 		// 特殊节点
-		if h, quit := n.checkPath(&i, path); quit {
-			return h
-		}
-
 		n = n.children[0]
 
 		p.appendKey(n.paramName)

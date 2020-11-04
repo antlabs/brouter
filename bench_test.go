@@ -27,9 +27,9 @@ type route struct {
 // http://developer.github.com/v3/
 var githubAPI = []route{
 	// OAuth Authorizations
-	{"GET", "/authorizations"},
+	//{"GET", "/authorizations"},
+	{"GET", "/authorizations/:id"},
 	/*
-		//{"GET", "/authorizations/:id"},
 		{"POST", "/authorizations"},
 		{"PUT", "/authorizations/clients/:client_id"},
 

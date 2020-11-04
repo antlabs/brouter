@@ -13,6 +13,7 @@ type tree struct {
 	root      *treeNode
 	paramPool sync.Pool
 	maxParam  int
+	haveParam bool
 }
 
 // 构造一课树
@@ -23,6 +24,10 @@ func newTree() *tree {
 // 插入函数
 func (r *tree) insert(path string, h HandleFunc) {
 	p := genPath(path, h)
+	if p.haveParam {
+		r.haveParam = p.haveParam
+	}
+
 	r.changePool(&p)
 	r.root.insert(path, h, p)
 }
@@ -233,23 +238,6 @@ func (n *treeNode) getChildrenIndex(c byte) *treeNode {
 
 }
 
-func (n *treeNode) debug() {
-	fmt.Printf("\n ============== start treeNode ######, %p\n", n)
-	fmt.Printf("	n.path:%s\n", n.path)
-	fmt.Printf("	children: ")
-	for i := 0; i < len(n.children); i++ {
-		fmt.Printf("%p ", n.children[i])
-	}
-	fmt.Printf("\n")
-
-	fmt.Printf("	char    : [")
-	for i := 0; i < len(n.children); i++ {
-		fmt.Printf("%c, ", getOffsetToChar(i))
-	}
-	fmt.Printf("]\n")
-	fmt.Printf(" ==============   end treeNode ######, %p\n\n", n)
-}
-
 func (n *treeNode) checkPath(j *int, path string) (h HandleFunc, quit bool) {
 
 	i := *j
@@ -344,4 +332,21 @@ func (t *tree) changePool(p *path) {
 		}
 	}
 
+}
+
+func (n *treeNode) debug() {
+	fmt.Printf("\n ============== start treeNode ######, %p\n", n)
+	fmt.Printf("	n.path:%s\n", n.path)
+	fmt.Printf("	children: ")
+	for i := 0; i < len(n.children); i++ {
+		fmt.Printf("%p ", n.children[i])
+	}
+	fmt.Printf("\n")
+
+	fmt.Printf("	char    : [")
+	for i := 0; i < len(n.children); i++ {
+		fmt.Printf("%c, ", getOffsetToChar(i))
+	}
+	fmt.Printf("]\n")
+	fmt.Printf(" ==============   end treeNode ######, %p\n\n", n)
 }

@@ -21,8 +21,9 @@ func (s *segment) equal(s1 segment) bool {
 }
 
 type path struct {
-	segments []segment
-	maxParam int
+	segments  []segment
+	maxParam  int
+	haveParam bool
 }
 
 // 标准库自带的split会去除分割符，但是这里需要，所以写个自定义的split
@@ -93,6 +94,7 @@ func genPath(p string, h HandleFunc) (path path) {
 				panic("Wrong parameter name")
 			}
 
+			path.haveParam = true
 			path.segments = append(path.segments, segment{path: "/", nodeType: nType, paramName: v[2:len(v)]})
 
 			prevIndex = i + 1

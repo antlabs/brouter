@@ -13,7 +13,6 @@ type tree struct {
 	root      *treeNode
 	paramPool sync.Pool
 	maxParam  int
-	haveParam bool
 }
 
 // 构造一课树
@@ -24,17 +23,21 @@ func newTree() *tree {
 // 插入函数
 func (r *tree) insert(path string, h HandleFunc) {
 	p := genPath(path, h)
-	if p.haveParam {
-		r.haveParam = p.haveParam
-	}
 
 	r.changePool(&p)
 	r.root.insert(path, h, p)
 }
 
+// 获取参数
+func (r *tree) getParam() *Params {
+	ptr := r.paramPool.Get().(*Params)
+	*ptr = (*ptr)[0:0]
+	return ptr
+}
+
 // 查找函数
-func (r *tree) lookup(path string, p *Params) HandleFunc {
-	return r.root.lookup(path, p)
+func (r *tree) lookup(path string) (HandleFunc, *Params) {
+	return r.root.lookup(path, r.getParam)
 }
 
 // treeNode，查找树node
@@ -229,7 +232,7 @@ func (n *treeNode) insert(path string, h HandleFunc, p path) {
 }
 
 func (n *treeNode) getChildrenIndex(c byte) *treeNode {
-	offset := getCodeOffsetLookup(c)
+	offset := recogOffset[c]
 	if offset >= len(n.children) {
 		return nil
 	}
@@ -238,31 +241,31 @@ func (n *treeNode) getChildrenIndex(c byte) *treeNode {
 
 }
 
-func (n *treeNode) lookup(path string, p *Params) (h HandleFunc) {
+func (n *treeNode) lookup(path string, getParam func() *Params) (h HandleFunc, p *Params) {
 
-	for i := 0; i < len(path); {
+	for {
 
 		// 当前节点path大于剩余需要匹配的path，说明路径和该节点不匹配
-		if len(n.path) > len(path[i:]) {
-			return nil
+		if len(n.path) > len(path) {
+			return nil, p
 		}
 
 		// 当前节点path和需要匹配的路径比较下，如果不相等，返回空指针
-		if n.path != path[i:i+len(n.path)] {
-			return nil
+		if n.path != path[:len(n.path)] {
+			return nil, p
 		}
 
-		i += len(n.path) // 跳过n.path的部分
+		path = path[len(n.path):]
 
-		if i == len(path) {
-			return n.handle
+		if len(path) == 0 {
+			return n.handle, p
 		}
 
 		// 普通节点
 		if !n.haveParamWildcardChild {
-			c := path[i]
-			if n = n.getChildrenIndex(c); n == nil {
-				return nil
+			n = n.getChildrenIndex(path[0])
+			if n == nil {
+				return nil, p
 			}
 			continue
 		}
@@ -270,35 +273,43 @@ func (n *treeNode) lookup(path string, p *Params) (h HandleFunc) {
 		// 特殊节点
 		n = n.children[0]
 
-		p.appendKey(n.paramName)
-
+		if getParam != nil {
+			if p == nil {
+				p = getParam()
+			}
+		}
 		if n.nodeType == param {
-			j := i
+			j := 0
 			for ; j < len(path) && path[j] != '/'; j++ {
 			}
 
-			p.setVal(path[i:j])
-			i = j
-
-			if j == len(path) {
-				return n.handle
+			if p != nil {
+				*p = append(*p, Param{Key: n.paramName, Value: path[:j]})
 			}
 
-			n = n.getChildrenIndex(path[i])
+			if j == len(path) {
+				return n.handle, p
+			}
+
+			path = path[j:]
+
+			n = n.getChildrenIndex(path[0])
 			if n == nil {
-				return nil
+				return nil, p
 			}
 			continue
 		}
 
 		if n.nodeType == wildcard {
-			p.setVal(path[i:len(path)])
-			return n.handle
+			if p != nil {
+				*p = append(*p, Param{Key: n.paramName, Value: path})
+			}
+			return n.handle, p
 		}
 
 	}
 
-	return n.handle
+	return n.handle, p
 }
 
 func (t *tree) changePool(p *path) {

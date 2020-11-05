@@ -313,3 +313,28 @@ func Test_github_Param8(t *testing.T) {
 
 	tc.run(t)
 }
+
+func Test_github_Param9(t *testing.T) {
+	tc := testCases{
+		{
+			insertPath: "/authorizations",
+			lookupPath: "/authorizations",
+			paramKey:   []string{""},
+			paramValue: []string{""},
+		},
+		{
+			insertPath: "/authorizations/:id",
+			lookupPath: "/authorizations/hello",
+			paramKey:   []string{"id"},
+			paramValue: []string{"hello"},
+		},
+		{
+			insertPath: "/applications/:client_id/tokens/:access_token",
+			lookupPath: "/applications/guonaihong/tokens/token",
+			paramKey:   []string{"client_id", "access_token"},
+			paramValue: []string{"guonaihong", "token"},
+		},
+	}
+
+	tc.run(t)
+}

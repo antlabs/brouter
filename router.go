@@ -53,7 +53,7 @@ func (r *router) Handle(method, path string, handle HandleFunc) {
 	r.save(method, path, handle)
 }
 
-// 如果Params的生命周期超过ServeHTTP函数，请clone一份Params
+// 如果Params的生命周期超过ServeHTTP函数，需Clone()一份Params
 // 或者取走感兴趣的参数
 func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	path := req.URL.Path
@@ -61,15 +61,7 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	tree := r.getTree(req.Method)
 	if tree != nil {
 
-		var ptr *Params
-
-		if tree.haveParam {
-			ptr = tree.paramPool.Get().(*Params)
-			*ptr = (*ptr)[0:0]
-			defer tree.paramPool.Put(ptr)
-		}
-
-		handle := tree.lookup(path, ptr)
+		handle, ptr := tree.lookup(path)
 		if handle != nil {
 			if ptr == nil {
 				handle(w, req, nil)
@@ -77,6 +69,7 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			}
 
 			handle(w, req, *ptr)
+			tree.paramPool.Put(ptr)
 			return
 		}
 

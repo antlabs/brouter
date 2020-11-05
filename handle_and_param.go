@@ -29,13 +29,4 @@ func (ps Params) Clone() Params {
 	return rv
 }
 
-func (p *Params) appendKey(key string) {
-
-	*p = append(*p, Param{Key: key})
-}
-
-func (p *Params) setVal(val string) {
-	(*p)[len(*p)-1].Value = val
-}
-
 type HandleFunc func(w http.ResponseWriter, r *http.Request, p Params)

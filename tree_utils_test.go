@@ -31,15 +31,18 @@ func (tcs *testCases) run(t *testing.T) {
 
 	for k, tc := range *tcs {
 
-		p2 := make(Params, 0, d.maxParam)
-		h := d.lookup(tc.lookupPath, &p2)
+		//p2 := make(Params, 0, d.maxParam)
+		h, p2 := d.lookup(tc.lookupPath)
 
-		p := p2
+		var p Params
+		if p2 != nil {
+			p = *p2
+		}
 		cb := func() {
 			handleToUint := *(*uintptr)(unsafe.Pointer(&h))
 			assert.NotEqual(t, handleToUint, uintptr(0), fmt.Sprintf("lookup word(%s)", tc.lookupPath))
 
-			fmt.Printf("testCases.run return h address:%x\n", handleToUint)
+			//fmt.Printf("testCases.run return h address:%x\n", handleToUint)
 			h(nil, nil, nil)
 			b := assert.Equal(t, done, k+1)
 			if !b {
@@ -48,7 +51,7 @@ func (tcs *testCases) run(t *testing.T) {
 
 			for index, needKey := range tc.paramKey {
 				if len(needKey) == 0 {
-					fmt.Printf("index = %d, needKey = 0\n", k)
+					//fmt.Printf("index = %d, needKey = 0\n", k)
 					continue
 				}
 

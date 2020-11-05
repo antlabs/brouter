@@ -29,14 +29,17 @@ var githubAPI = []route{
 	// OAuth Authorizations
 	//{"GET", "/authorizations"},
 	{"GET", "/authorizations/:id"},
-	/*
-		{"POST", "/authorizations"},
-		{"PUT", "/authorizations/clients/:client_id"},
+	//	{"POST", "/authorizations"},
+	//{"PUT", "/authorizations/clients/:client_id"},
 
+	/*
 		{"PATCH", "/authorizations/:id"},
 		{"DELETE", "/authorizations/:id"},
-		{"GET", "/applications/:client_id/tokens/:access_token"},
-		{"DELETE", "/applications/:client_id/tokens"},
+	*/
+	//{"GET", "/applications/:client_id/tokens/:access_token"},
+
+	//{"DELETE", "/applications/:client_id/tokens"},
+	/*
 		{"DELETE", "/applications/:client_id/tokens/:access_token"},
 
 		// Activity
@@ -75,9 +78,7 @@ var githubAPI = []route{
 		{"GET", "/user/subscriptions/:owner/:repo"},
 		{"PUT", "/user/subscriptions/:owner/:repo"},
 		{"DELETE", "/user/subscriptions/:owner/:repo"},
-	*/
 
-	/*
 		// Gists
 		{"GET", "/users/:user/gists"},
 		{"GET", "/gists"},
@@ -142,10 +143,8 @@ var githubAPI = []route{
 		{"POST", "/repos/:owner/:repo/milestones"},
 		//{"PATCH", "/repos/:owner/:repo/milestones/:number"},
 		{"DELETE", "/repos/:owner/:repo/milestones/:number"},
-	*/
 
-	// Miscellaneous
-	/*
+		// Miscellaneous
 		{"GET", "/emojis"},
 		{"GET", "/gitignore/templates"},
 		{"GET", "/gitignore/templates/:name"},
@@ -169,9 +168,7 @@ var githubAPI = []route{
 		{"GET", "/orgs/:org/teams"},
 		{"GET", "/teams/:id"},
 		{"POST", "/orgs/:org/teams"},
-	*/
-	//{"PATCH", "/teams/:id"},
-	/*
+		//{"PATCH", "/teams/:id"},
 		{"DELETE", "/teams/:id"},
 		{"GET", "/teams/:id/members"},
 		{"GET", "/teams/:id/members/:user"},
@@ -182,25 +179,23 @@ var githubAPI = []route{
 		{"PUT", "/teams/:id/repos/:owner/:repo"},
 		{"DELETE", "/teams/:id/repos/:owner/:repo"},
 		{"GET", "/user/teams"},
-	*/
 
-	// Pull Requests
-	//{"GET", "/repos/:owner/:repo/pulls"},
-	//{"GET", "/repos/:owner/:repo/pulls/:number"},
-	//{"POST", "/repos/:owner/:repo/pulls"},
-	//{"PATCH", "/repos/:owner/:repo/pulls/:number"},
-	//{"GET", "/repos/:owner/:repo/pulls/:number/commits"},
-	//{"GET", "/repos/:owner/:repo/pulls/:number/files"},
-	//{"GET", "/repos/:owner/:repo/pulls/:number/merge"},
-	//{"PUT", "/repos/:owner/:repo/pulls/:number/merge"},
-	//{"GET", "/repos/:owner/:repo/pulls/:number/comments"},
-	//{"GET", "/repos/:owner/:repo/pulls/comments"},
-	//{"GET", "/repos/:owner/:repo/pulls/comments/:number"},
-	//{"PUT", "/repos/:owner/:repo/pulls/:number/comments"},
-	//{"PATCH", "/repos/:owner/:repo/pulls/comments/:number"},
-	//{"DELETE", "/repos/:owner/:repo/pulls/comments/:number"},
+		// Pull Requests
+		//{"GET", "/repos/:owner/:repo/pulls"},
+		//{"GET", "/repos/:owner/:repo/pulls/:number"},
+		//{"POST", "/repos/:owner/:repo/pulls"},
+		//{"PATCH", "/repos/:owner/:repo/pulls/:number"},
+		//{"GET", "/repos/:owner/:repo/pulls/:number/commits"},
+		//{"GET", "/repos/:owner/:repo/pulls/:number/files"},
+		//{"GET", "/repos/:owner/:repo/pulls/:number/merge"},
+		//{"PUT", "/repos/:owner/:repo/pulls/:number/merge"},
+		//{"GET", "/repos/:owner/:repo/pulls/:number/comments"},
+		//{"GET", "/repos/:owner/:repo/pulls/comments"},
+		//{"GET", "/repos/:owner/:repo/pulls/comments/:number"},
+		//{"PUT", "/repos/:owner/:repo/pulls/:number/comments"},
+		//{"PATCH", "/repos/:owner/:repo/pulls/comments/:number"},
+		//{"DELETE", "/repos/:owner/:repo/pulls/comments/:number"},
 
-	/*
 		// Repositories
 		{"GET", "/user/repos"},
 		{"GET", "/users/:user/repos"},

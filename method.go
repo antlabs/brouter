@@ -2,7 +2,6 @@ package brouter
 
 import (
 	"errors"
-	"fmt"
 )
 
 type method struct {
@@ -20,7 +19,7 @@ func (m *method) init() {
 }
 
 func methodIndex(method string) (int, error) {
-	if len(method) == 0 {
+	if len(method) <= 2 {
 		return 0, ErrMethod
 	}
 
@@ -28,9 +27,6 @@ func methodIndex(method string) (int, error) {
 	case 'G':
 		return 0, nil
 	case 'P':
-		if len(method) <= 1 {
-			return 0, fmt.Errorf("%w, %s", ErrMethod, method)
-		}
 
 		switch method[1] {
 		case 'O':
@@ -40,7 +36,7 @@ func methodIndex(method string) (int, error) {
 		case 'A':
 			return 3, nil
 		default:
-			return 0, fmt.Errorf("%w, %s", ErrMethod, method)
+			return 0, ErrMethod
 		}
 	case 'D':
 		return 4, nil
@@ -49,10 +45,10 @@ func methodIndex(method string) (int, error) {
 	case 'O':
 		return 6, nil
 	default:
-		return 0, fmt.Errorf("%w, %s", ErrMethod, method)
+		return 0, ErrMethod
 	}
 
-	return 0, fmt.Errorf("%w, %s", ErrMethod, method)
+	return 0, ErrMethod
 }
 
 func (m *method) getTree(method string) *tree {

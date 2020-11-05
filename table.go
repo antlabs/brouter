@@ -3,10 +3,11 @@
 
 package brouter
 
+var recogOffset [256]int
+
 type table struct {
 	recogOffsetMap map[byte]int
 	offsetToChar   map[int]byte
-	recogOffset    [256]int
 	pos            int
 }
 
@@ -27,7 +28,7 @@ func (t *table) getCodeOffsetInsert(c byte) int {
 
 	t.pos++
 	t.recogOffsetMap[c] = t.pos
-	t.recogOffset[c] = t.pos
+	recogOffset[c] = t.pos
 	t.offsetToChar[t.pos] = c
 
 	return t.pos
@@ -35,11 +36,6 @@ func (t *table) getCodeOffsetInsert(c byte) int {
 
 func (t *table) getOffsetToChar(offset int) byte {
 	return t.offsetToChar[offset]
-}
-
-// 返回0表示没有找到
-func (t *table) getCodeOffsetLookup(c byte) int {
-	return t.recogOffset[c]
 }
 
 var defaultTable table
@@ -54,8 +50,4 @@ func getCodeOffsetInsert(c byte) int {
 
 func getOffsetToChar(offset int) byte {
 	return defaultTable.getOffsetToChar(offset)
-}
-
-func getCodeOffsetLookup(c byte) int {
-	return defaultTable.getCodeOffsetLookup(c)
 }

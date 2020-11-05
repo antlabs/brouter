@@ -283,9 +283,7 @@ func (n *treeNode) lookup(path string, getParam func() *Params) (h HandleFunc, p
 			for ; j < len(path) && path[j] != '/'; j++ {
 			}
 
-			if p != nil {
-				*p = append(*p, Param{Key: n.paramName, Value: path[:j]})
-			}
+			*p = append(*p, Param{Key: n.paramName, Value: path[:j]})
 
 			if j == len(path) {
 				return n.handle, p
@@ -301,9 +299,7 @@ func (n *treeNode) lookup(path string, getParam func() *Params) (h HandleFunc, p
 		}
 
 		if n.nodeType == wildcard {
-			if p != nil {
-				*p = append(*p, Param{Key: n.paramName, Value: path})
-			}
+			*p = append(*p, Param{Key: n.paramName, Value: path})
 			return n.handle, p
 		}
 

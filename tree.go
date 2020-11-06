@@ -105,7 +105,7 @@ func (n *treeNode) getNextTreeNode(i int, p path, getOffset func(c byte) int) (n
 }
 
 func (n *treeNode) directInsert(segment segment, i int, p path, getOffset func(c byte) int) (*treeNode, bool) {
-	// 普通节点
+	// 普通节点, 或者没有path的变量节点
 	if segment.nodeType.isOrdinary() || len(segment.path) == 0 && segment.nodeType.isParamOrWildcard() {
 		n.segment = segment
 
@@ -152,6 +152,9 @@ func (n *treeNode) splitCurrentNode(i int, getOffset func(c byte) int) {
 	nextNode := n.getChildrenNode(c, getOffset)
 	nextNode.children = grandson
 	nextNode.segment = splitSegment
+	nextNode.haveParamWildcardChild = n.haveParamWildcardChild
+
+	n.haveParamWildcardChild = false
 }
 
 func (n *treeNode) splitNode(sm segment, segIndex int, p path, getOffset func(c byte) int) *treeNode {
@@ -170,6 +173,7 @@ func (n *treeNode) splitNode(sm segment, segIndex int, p path, getOffset func(c 
 	//TODO, 待插入segment如果是特殊节点，和n.path有重合的路径(n.path是普通路径), 直接panic
 	// 1. n 是特殊节点，insertPath是普通节点
 	// 2. n 是普通节点，insertPath是特殊节点
+
 	if len(n.path[i:]) > 0 {
 		n.splitCurrentNode(i, getOffset)
 	} // else n.path只有'/'
@@ -178,7 +182,11 @@ func (n *treeNode) splitNode(sm segment, segIndex int, p path, getOffset func(c 
 		nextNode := n.getChildrenNode(insertPath[i], getOffset)
 		sm.path = insertPath[i:]
 		nextNode.segment = sm
-		return nextNode.getNextTreeNode(segIndex, p, getOffset)
+		nextNode2, nextType := nextNode.getNextTreeNode2(segIndex, p, getOffset)
+		if nextType.isParamOrWildcard() {
+			nextNode.haveParamWildcardChild = true
+		}
+		return nextNode2
 	}
 
 	// insertPath 为0的情况
@@ -195,7 +203,6 @@ func (n *treeNode) splitNode(sm segment, segIndex int, p path, getOffset func(c 
 			paramOrWildcard.handle = sm.handle
 		}
 
-		//paramOrWildcard.segment = sm
 		paramOrWildcard.path = ""
 		return paramOrWildcard.getNextTreeNode(segIndex, p, getOffset)
 	}
@@ -209,7 +216,6 @@ func (n *treeNode) splitNode(sm segment, segIndex int, p path, getOffset func(c 
 func (n *treeNode) insert(path string, h HandleFunc, p path) {
 
 	getOffset := n.root.getCodeOffsetAndInsert
-	//root := n.root
 	for i := 0; i < len(p.segments); i++ {
 
 		segment := p.segments[i]
@@ -309,6 +315,7 @@ func (n *treeNode) lookup(path string, getParam func() *Params) (h HandleFunc, p
 				p = getParam()
 			}
 		}
+
 		if n.nodeType == param {
 			j := 0
 			for ; j < len(path) && path[j] != '/'; j++ {
@@ -368,7 +375,12 @@ func (n *treeNode) debug() {
 
 	fmt.Printf("	char    : [")
 	for i := 0; i < len(n.children); i++ {
-		fmt.Printf("%c, ", n.root.getOffsetToChar(i))
+		c := n.root.getOffsetToChar(i)
+		if n.children[i] == nil {
+			c = 0
+		}
+
+		fmt.Printf("%c, ", c)
 	}
 	fmt.Printf("]\n")
 	fmt.Printf(" ==============   end treeNode ######, %p\n\n", n)

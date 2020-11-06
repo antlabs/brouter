@@ -28,15 +28,13 @@ type route struct {
 var githubAPI = []route{
 	// OAuth Authorizations
 	//{"GET", "/authorizations"},
-	{"GET", "/authorizations/:id"},
-	//	{"POST", "/authorizations"},
+	//{"GET", "/authorizations/:id"},
+	//{"POST", "/authorizations"},
 	//{"PUT", "/authorizations/clients/:client_id"},
 
-	/*
-		{"PATCH", "/authorizations/:id"},
-		{"DELETE", "/authorizations/:id"},
-	*/
-	//{"GET", "/applications/:client_id/tokens/:access_token"},
+	//{"PATCH", "/authorizations/:id"},
+	//{"DELETE", "/authorizations/:id"},
+	{"GET", "/applications/:client_id/tokens/:access_token"},
 
 	//{"DELETE", "/applications/:client_id/tokens"},
 	/*

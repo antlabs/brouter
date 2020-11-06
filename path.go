@@ -93,7 +93,14 @@ func genPath(p string, h HandleFunc) (path path) {
 				panic("Wrong parameter name")
 			}
 
-			path.segments = append(path.segments, segment{path: "/", nodeType: nType, paramName: v[2:len(v)]})
+			nodePath := "/"
+			lastIndex := len(path.segments) - 1
+			if lastIndex >= 0 && path.segments[lastIndex].nodeType.isOrdinary() {
+				nodePath = ""
+				path.segments[lastIndex].path += "/"
+			}
+
+			path.segments = append(path.segments, segment{path: nodePath, nodeType: nType, paramName: v[2:len(v)]})
 
 			prevIndex = i + 1
 			path.maxParam++

@@ -13,11 +13,14 @@ type tree struct {
 	root      *treeNode
 	paramPool sync.Pool
 	maxParam  int
+	table
 }
 
 // 构造一课树
 func newTree() *tree {
-	return &tree{root: &treeNode{}}
+	t := &tree{root: &treeNode{}}
+	t.init()
+	return t
 }
 
 // 插入函数
@@ -25,6 +28,7 @@ func (r *tree) insert(path string, h HandleFunc) {
 	p := genPath(path, h)
 
 	r.changePool(&p)
+	r.root.root = r
 	r.root.insert(path, h, p)
 }
 
@@ -45,6 +49,7 @@ type treeNode struct {
 	children []*treeNode
 	segment
 	haveParamWildcardChild bool //当前节点有特殊节点的儿子
+	root                   *tree
 }
 
 // 获取param or wildcard 节点
@@ -53,8 +58,8 @@ func (n *treeNode) getParamOrWildcard() *treeNode {
 }
 
 // 获取子节点
-func (n *treeNode) getChildrenNode(c byte) *treeNode {
-	offset := getCodeOffsetInsert(c)
+func (n *treeNode) getChildrenNode(c byte, getOffset func(c byte) int) *treeNode {
+	offset := getOffset(c)
 	return n.getChildrenIndexAndMalloc(offset)
 }
 
@@ -73,40 +78,63 @@ func (n *treeNode) getChildrenIndexAndMalloc(index int) *treeNode {
 	return n.children[index]
 }
 
-func (n *treeNode) getNextTreeNode(i int, p path) (nextNode *treeNode) {
+func (n *treeNode) getNextTreeNode2(i int, p path, getOffset func(c byte) int) (nextNode *treeNode, nextNodeType nodeType) {
 	if i < len(p.segments) {
 		nextSegment := p.segments[i]
-		nextNode = n.getChildrenNode(nextSegment.path[0])
+		if len(nextSegment.path) > 0 {
+			return n.getChildrenNode(nextSegment.path[0], getOffset), param
+		}
+
+		return n.getParamOrWildcard(), nextSegment.nodeType
 	}
 
 	return
 }
 
-func (n *treeNode) directInsert(segment segment, i int, p path) (*treeNode, bool) {
+func (n *treeNode) getNextTreeNode(i int, p path, getOffset func(c byte) int) (nextNode *treeNode) {
+	if i < len(p.segments) {
+		nextSegment := p.segments[i]
+		if len(nextSegment.path) > 0 {
+			return n.getChildrenNode(nextSegment.path[0], getOffset)
+		}
+
+		return n.getParamOrWildcard()
+	}
+
+	return
+}
+
+func (n *treeNode) directInsert(segment segment, i int, p path, getOffset func(c byte) int) (*treeNode, bool) {
 	// 普通节点
-	if segment.nodeType.isOrdinary() {
+	if segment.nodeType.isOrdinary() || len(segment.path) == 0 && segment.nodeType.isParamOrWildcard() {
 		n.segment = segment
 
-		return n.getNextTreeNode(i, p), true
+		nextNode, nextType := n.getNextTreeNode2(i, p, getOffset)
+		if nextType.isParamOrWildcard() {
+			n.haveParamWildcardChild = true
+		}
+		return nextNode, true
 	}
 
 	// 变量或者通配符节点
 	if segment.nodeType.isParamOrWildcard() {
-		n.path = segment.path
-		n.nodeType = ordinary
+		if segment.path != "" {
+			n.path = segment.path
+			n.nodeType = ordinary
 
-		n.haveParamWildcardChild = true
-		paramOrWildcard := n.getParamOrWildcard()
-		paramOrWildcard.segment = segment
-		paramOrWildcard.path = ""
+			n.haveParamWildcardChild = true
+			paramOrWildcard := n.getParamOrWildcard()
+			paramOrWildcard.segment = segment
+			paramOrWildcard.path = ""
 
-		return paramOrWildcard.getNextTreeNode(i, p), true
+			return paramOrWildcard.getNextTreeNode(i, p, getOffset), true
+		}
 	}
 
 	return nil, false
 }
 
-func (n *treeNode) splitCurrentNode(i int) {
+func (n *treeNode) splitCurrentNode(i int, getOffset func(c byte) int) {
 	// 儿子变孙子
 	grandson := n.children
 	n.children = make([]*treeNode, 0, 1)
@@ -121,12 +149,12 @@ func (n *treeNode) splitCurrentNode(i int) {
 	n.path = n.path[:i]
 	n.handle = nil
 
-	nextNode := n.getChildrenNode(c)
+	nextNode := n.getChildrenNode(c, getOffset)
 	nextNode.children = grandson
 	nextNode.segment = splitSegment
 }
 
-func (n *treeNode) splitNode(sm segment, segIndex int, p path) *treeNode {
+func (n *treeNode) splitNode(sm segment, segIndex int, p path, getOffset func(c byte) int) *treeNode {
 	//分裂, 找到共同前缀
 	// 特殊情况已经被剔除掉，这里是需要新加子节点的情况
 	insertPath := sm.path
@@ -143,14 +171,14 @@ func (n *treeNode) splitNode(sm segment, segIndex int, p path) *treeNode {
 	// 1. n 是特殊节点，insertPath是普通节点
 	// 2. n 是普通节点，insertPath是特殊节点
 	if len(n.path[i:]) > 0 {
-		n.splitCurrentNode(i)
+		n.splitCurrentNode(i, getOffset)
 	} // else n.path只有'/'
 
 	if len(insertPath[i:]) > 0 {
-		nextNode := n.getChildrenNode(insertPath[i])
+		nextNode := n.getChildrenNode(insertPath[i], getOffset)
 		sm.path = insertPath[i:]
 		nextNode.segment = sm
-		return nextNode.getNextTreeNode(segIndex, p)
+		return nextNode.getNextTreeNode(segIndex, p, getOffset)
 	}
 
 	// insertPath 为0的情况
@@ -169,17 +197,19 @@ func (n *treeNode) splitNode(sm segment, segIndex int, p path) *treeNode {
 
 		//paramOrWildcard.segment = sm
 		paramOrWildcard.path = ""
-		return paramOrWildcard.getNextTreeNode(segIndex, p)
+		return paramOrWildcard.getNextTreeNode(segIndex, p, getOffset)
 	}
 
 	panic("没有考虑到的情况!!!")
 
-	return n.getNextTreeNode(segIndex, p)
+	return n.getNextTreeNode(segIndex, p, getOffset)
 }
 
 // 这里分情况讨论
 func (n *treeNode) insert(path string, h HandleFunc, p path) {
 
+	getOffset := n.root.getCodeOffsetAndInsert
+	//root := n.root
 	for i := 0; i < len(p.segments); i++ {
 
 		segment := p.segments[i]
@@ -190,12 +220,12 @@ func (n *treeNode) insert(path string, h HandleFunc, p path) {
 			// 注意:区分普通节点和变量节点
 			if n.nodeType.isEmpty() {
 				//fmt.Printf("1. isEmpty:  [%8s]:[%s], node address = %p, i = %d, %v\n", segment.path, path, n, i, n)
-				if next, ok := n.directInsert(segment, i+1, p); ok {
+				if next, ok := n.directInsert(segment, i+1, p, getOffset); ok {
 					n = next
 					break
 				}
 
-				panic("Unknown node type")
+				panic(fmt.Sprintf("Unknown node type:%s", segment.nodeType))
 			}
 
 			// 2,3,4 考虑下变量和可变参数
@@ -205,7 +235,7 @@ func (n *treeNode) insert(path string, h HandleFunc, p path) {
 				if n.handle == nil {
 					n.handle = segment.handle
 				}
-				n = n.getNextTreeNode(i+1, p)
+				n = n.getNextTreeNode(i+1, p, getOffset)
 				break
 			}
 
@@ -218,22 +248,22 @@ func (n *treeNode) insert(path string, h HandleFunc, p path) {
 				*/
 
 				segment.path = segment.path[len(n.path):]
-				n = n.getChildrenNode(segment.path[0])
+				n = n.getChildrenNode(segment.path[0], getOffset)
 				continue
 			}
 
 			// 4.分裂节点再插入
 			//fmt.Printf("4.splitNode: [%8s]:[%s], node address = %p\n", segment.path, path, n)
-			n = n.splitNode(segment, i+1, p)
+			n = n.splitNode(segment, i+1, p, getOffset)
 			break
 		}
 
 	}
 }
 
-func (n *treeNode) getChildrenIndex(c byte) *treeNode {
-	offset := recogOffset[c]
-	if offset >= len(n.children) {
+func (n *treeNode) getChildrenIndex(c byte, getChildrenOffset func(c byte) (int, bool)) *treeNode {
+	offset, found := getChildrenOffset(c)
+	if !found || offset >= len(n.children) {
 		return nil
 	}
 
@@ -243,6 +273,7 @@ func (n *treeNode) getChildrenIndex(c byte) *treeNode {
 
 func (n *treeNode) lookup(path string, getParam func() *Params) (h HandleFunc, p *Params) {
 
+	getChildrenOffset := n.root.getCodeOffset
 	for {
 
 		// 当前节点path大于剩余需要匹配的path，说明路径和该节点不匹配
@@ -263,7 +294,7 @@ func (n *treeNode) lookup(path string, getParam func() *Params) (h HandleFunc, p
 
 		// 普通节点
 		if !n.haveParamWildcardChild {
-			n = n.getChildrenIndex(path[0])
+			n = n.getChildrenIndex(path[0], getChildrenOffset)
 			if n == nil {
 				return nil, p
 			}
@@ -291,7 +322,7 @@ func (n *treeNode) lookup(path string, getParam func() *Params) (h HandleFunc, p
 
 			path = path[j:]
 
-			n = n.getChildrenIndex(path[0])
+			n = n.getChildrenIndex(path[0], getChildrenOffset)
 			if n == nil {
 				return nil, p
 			}
@@ -337,7 +368,7 @@ func (n *treeNode) debug() {
 
 	fmt.Printf("	char    : [")
 	for i := 0; i < len(n.children); i++ {
-		fmt.Printf("%c, ", getOffsetToChar(i))
+		fmt.Printf("%c, ", n.root.getOffsetToChar(i))
 	}
 	fmt.Printf("]\n")
 	fmt.Printf(" ==============   end treeNode ######, %p\n\n", n)

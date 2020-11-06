@@ -38,11 +38,11 @@ func Test_GenPath(t *testing.T) {
 			path: "/teams/:id/repos",
 			segments: []segment{
 				{
-					path:     "/teams",
+					path:     "/teams/",
 					nodeType: ordinary,
 				},
 				{
-					path:      "/",
+					path:      "",
 					nodeType:  param,
 					paramName: "id",
 				},
@@ -56,20 +56,20 @@ func Test_GenPath(t *testing.T) {
 			path: "/a/b/c/:name/c/d/:hello",
 			segments: []segment{
 				{
-					path:     "/a/b/c",
+					path:     "/a/b/c/",
 					nodeType: ordinary,
 				},
 				{
-					path:      "/",
+					path:      "",
 					nodeType:  param,
 					paramName: "name",
 				},
 				{
-					path:     "/c/d",
+					path:     "/c/d/",
 					nodeType: ordinary,
 				},
 				{
-					path:      "/",
+					path:      "",
 					nodeType:  param,
 					paramName: "hello",
 				},
@@ -79,11 +79,11 @@ func Test_GenPath(t *testing.T) {
 			path: "/repos/:owner/:repo/pulls/:number/files",
 			segments: []segment{
 				{
-					path:     "/repos",
+					path:     "/repos/",
 					nodeType: ordinary,
 				},
 				{
-					path:      "/",
+					path:      "",
 					nodeType:  param,
 					paramName: "owner",
 				},
@@ -93,11 +93,11 @@ func Test_GenPath(t *testing.T) {
 					paramName: "repo",
 				},
 				{
-					path:     "/pulls",
+					path:     "/pulls/",
 					nodeType: ordinary,
 				},
 				{
-					path:      "/",
+					path:      "",
 					nodeType:  param,
 					paramName: "number",
 				},

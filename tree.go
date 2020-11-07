@@ -310,10 +310,8 @@ func (n *treeNode) lookup(path string, getParam func() *Params) (h HandleFunc, p
 		// 特殊节点
 		n = n.children[0]
 
-		if getParam != nil {
-			if p == nil {
-				p = getParam()
-			}
+		if p == nil && getParam != nil {
+			p = getParam()
 		}
 
 		if n.nodeType == param {
@@ -327,12 +325,13 @@ func (n *treeNode) lookup(path string, getParam func() *Params) (h HandleFunc, p
 				return n.handle, p
 			}
 
-			path = path[j:]
-
-			n = n.getChildrenIndex(path[0], getChildrenOffset)
-			if n == nil {
+			if len(n.children) < 2 {
 				return nil, p
 			}
+
+			path = path[j:]
+			n = n.children[1] // '/'
+
 			continue
 		}
 

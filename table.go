@@ -18,6 +18,8 @@ func (t *table) init() {
 	if t.offsetToChar == nil {
 		t.offsetToChar = make(map[int]byte)
 	}
+
+	t.getCodeOffsetAndInsert('/')
 }
 
 func (t *table) getCodeOffsetAndInsert(c byte) int {

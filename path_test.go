@@ -114,3 +114,36 @@ func Test_GenPath(t *testing.T) {
 		assert.Equal(t, test.segments, got.segments)
 	}
 }
+
+func Test_GenPath1(t *testing.T) {
+	ts := []testGenPath{
+		{
+			path: "/applications/:client_id/tokens/:access_token",
+			segments: []segment{
+				{
+					path:     "/applications/",
+					nodeType: ordinary,
+				},
+				{
+					path:      "",
+					nodeType:  param,
+					paramName: "client_id",
+				},
+				{
+					path:     "/tokens/",
+					nodeType: ordinary,
+				},
+				{
+					path:      "",
+					nodeType:  param,
+					paramName: "access_token",
+				},
+			},
+		},
+	}
+
+	for _, test := range ts {
+		got := genPath(test.path, nil)
+		assert.Equal(t, test.segments, got.segments)
+	}
+}

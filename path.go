@@ -10,9 +10,9 @@ import (
 
 type segment struct {
 	path      string
-	nodeType  nodeType
 	paramName string
 	handle    HandleFunc
+	nodeType  nodeType
 }
 
 func (s *segment) equal(s1 segment) bool {

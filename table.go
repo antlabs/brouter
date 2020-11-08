@@ -38,8 +38,3 @@ func (t *table) getCodeOffsetAndInsert(c byte) int {
 func (t *table) getOffsetToChar(offset int) byte {
 	return t.offsetToChar[offset]
 }
-
-func (t *table) getCodeOffset(c byte) (offset int, found bool) {
-	offset = t.recogOffset[c]
-	return offset, offset != 0
-}

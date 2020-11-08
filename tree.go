@@ -13,12 +13,13 @@ type tree struct {
 	root      *treeNode
 	paramPool sync.Pool
 	maxParam  int
-	table
+	*table
 }
 
 // 构造一课树
 func newTree() *tree {
 	t := &tree{root: &treeNode{}}
+	t.table = &table{}
 	t.init()
 	return t
 }
@@ -46,10 +47,10 @@ func (r *tree) lookup(path string) (HandleFunc, *Params) {
 
 // treeNode，查找树node
 type treeNode struct {
-	children []*treeNode
-	segment
+	children               []*treeNode
 	haveParamWildcardChild bool //当前节点有特殊节点的儿子
-	root                   *tree
+	segment
+	root *tree
 }
 
 // 获取param or wildcard 节点
@@ -267,19 +268,10 @@ func (n *treeNode) insert(path string, h HandleFunc, p path) {
 	}
 }
 
-func (n *treeNode) getChildrenIndex(c byte, getChildrenOffset func(c byte) (int, bool)) *treeNode {
-	offset, found := getChildrenOffset(c)
-	if !found || offset >= len(n.children) {
-		return nil
-	}
-
-	return n.children[offset]
-
-}
-
 func (n *treeNode) lookup(path string, getParam func() *Params) (h HandleFunc, p *Params) {
 
-	getChildrenOffset := n.root.getCodeOffset
+	offsetTable := &n.root.recogOffset
+
 	for {
 
 		// 当前节点path大于剩余需要匹配的path，说明路径和该节点不匹配
@@ -292,15 +284,21 @@ func (n *treeNode) lookup(path string, getParam func() *Params) (h HandleFunc, p
 			return nil, p
 		}
 
-		path = path[len(n.path):]
-
-		if len(path) == 0 {
+		if len(path) == len(n.path) {
 			return n.handle, p
 		}
 
+		path = path[len(n.path):]
+
 		// 普通节点
 		if !n.haveParamWildcardChild {
-			n = n.getChildrenIndex(path[0], getChildrenOffset)
+
+			offset := offsetTable[path[0]]
+			if offset == 0 || offset >= len(n.children) {
+				return nil, p
+			}
+
+			n = n.children[offset]
 			if n == nil {
 				return nil, p
 			}

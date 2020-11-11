@@ -338,3 +338,22 @@ func Test_github_Param9(t *testing.T) {
 
 	tc.run(t)
 }
+
+func Test_github_Param10(t *testing.T) {
+	tc := testCases{
+		{
+			insertPath: "/repos/:owner/:repo/milestones/:number/labels",
+			lookupPath: "/repos/guonaihong/brouter/milestones/12/labels",
+			paramKey:   []string{"owner", "repo"},
+			paramValue: []string{"guonaihong", "brouter"},
+		},
+		{
+			insertPath: "/repos/:owner/:repo/milestones",
+			lookupPath: "/repos/guonaihong/brouter/milestones",
+			paramKey:   []string{"owner", "repo"},
+			paramValue: []string{"guonaihong", "brouter"},
+		},
+	}
+
+	tc.run(t)
+}

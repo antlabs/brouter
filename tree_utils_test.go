@@ -73,4 +73,6 @@ func (tcs *testCases) run(t *testing.T) {
 			break
 		}
 	}
+
+	d.info()
 }

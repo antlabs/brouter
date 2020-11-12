@@ -5,6 +5,7 @@ package brouter
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 )
 
@@ -267,9 +268,9 @@ func (n *treeNode) insert(path string, h HandleFunc, p path) {
 
 		segment := p.segments[i]
 
-		prevNode := n
-		n.childrenNumber++
+		//prevNode := n
 		for {
+			n.childrenNumber++
 			// 1.直接插入
 			// 如果n.segment.isOrdinary() 为空，就可以直接插入到这个节点
 			// 注意:区分普通节点和变量节点
@@ -315,9 +316,9 @@ func (n *treeNode) insert(path string, h HandleFunc, p path) {
 			}
 		}
 
-		if len(prevNode.charIndex) > 1 {
-			prevNode.debug()
-		}
+		//if len(prevNode.charIndex) > 1 {
+		//prevNode.info()
+		//}
 
 		// TODO 排序
 	}
@@ -419,7 +420,8 @@ func (t *tree) changePool(p *path) {
 
 }
 
-func (n *treeNode) debug() {
+// 打印一个节点
+func (n *treeNode) info() {
 	fmt.Printf("\n ============== start treeNode ######, %p\n", n)
 	fmt.Printf("	n.path:%s\n", n.path)
 	fmt.Printf("	children: ")
@@ -448,4 +450,48 @@ func (n *treeNode) debug() {
 
 	fmt.Printf("	charIndex:%s\n", n.charIndex)
 	fmt.Printf(" ==============   end treeNode ######, %p\n\n", n)
+}
+
+// 打印当前节点的子树
+// 有子节点用蓝色表示
+// 变量节点使用红色表示
+func (n *treeNode) depthfirst(depth int, prefix string) {
+	if n.handle != nil {
+		if n.handle != nil {
+			prefix = "\n" + strings.Repeat(" ", depth)
+		}
+
+		//fmt.Printf("%s\n", strings.Repeat("-->", depth))
+	}
+
+	if n.paramName == "" {
+		fmt.Printf("%s%s", prefix, n.path)
+	} else {
+		fmt.Printf("%s:%s", prefix, n.paramName)
+	}
+	if n.handle != nil {
+		//fmt.Printf("%s\n", strings.Repeat("-->", depth))
+	}
+	found := false
+
+	for _, n1 := range n.children {
+		if n1 == nil {
+			continue
+		}
+		found = true
+		num := len(n.path)
+		if num == 0 {
+			num = len(n.paramName)
+		}
+
+		n1.depthfirst(depth+num, "")
+	}
+	if found {
+		fmt.Printf("\n")
+	}
+}
+
+// 打印一颗数
+func (t *tree) info() {
+	t.root.depthfirst(len(t.root.path), "")
 }

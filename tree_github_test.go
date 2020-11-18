@@ -63,7 +63,19 @@ func Test_github_Param2(t *testing.T) {
 		},
 	}
 
-	tc.run(t)
+	tree := tc.run(t)
+	check := childNumChecks{
+		{path: "/a", num: 3},
+		{path: "/applications/", num: 2},
+		{path: "/applications/123", num: 2},
+		{path: "/applications/123/tokens", num: 2},
+		{path: "/applications/123/tokens/", num: 1},
+		{path: "/applications/123/tokens/my_tokens", num: 1},
+		{path: "/authorizations/", num: 1},
+		{path: "/authorizations/id", num: 1},
+	}
+	check.check(t, tree)
+
 }
 
 func Test_github_Param3(t *testing.T) {
@@ -83,7 +95,15 @@ func Test_github_Param3(t *testing.T) {
 		},
 	}
 
-	tc.run(t)
+	tree := tc.run(t)
+	check := childNumChecks{
+		{path: "/teams/", num: 2},
+		{path: "/teams/id", num: 2},
+		{path: "/teams/id/members/", num: 1},
+		{path: "/teams/id/members/guoguo", num: 1},
+	}
+	check.check(t, tree)
+
 }
 
 // tail里面是长的，insert里面是短的
@@ -140,7 +160,27 @@ func Test_github_Param5(t *testing.T) {
 		},
 	}
 
-	tc.run(t)
+	tree := tc.run(t)
+	check := childNumChecks{
+		{path: "/", num: 5},
+		{path: "/a", num: 3},
+		{path: "/authorizations", num: 2},
+		{path: "/authorizations/", num: 1},
+		{path: "/authorizations/id", num: 1},
+		{path: "/applications/", num: 1},
+		{path: "/applications/client_id", num: 1},
+		{path: "/applications/client_id/tokens/", num: 1},
+		{path: "/applications/client_id/tokens/access_token", num: 1},
+		{path: "/repos/", num: 1},
+		{path: "/repos/owner", num: 1},
+		{path: "/repos/owner/", num: 1},
+		{path: "/repos/owner/baserouter", num: 1},
+		{path: "/repos/owner/baserouter/events", num: 1},
+		{path: "/orgs/", num: 1},
+		{path: "/orgs/antlabs", num: 1},
+		{path: "/orgs/antlabs/events", num: 1},
+	}
+	check.check(t, tree)
 }
 
 func Test_github_Param6(t *testing.T) {
@@ -238,7 +278,12 @@ func Test_github_Param7(t *testing.T) {
 		},
 	}
 
-	tc.run(t)
+	tree := tc.run(t)
+	check := childNumChecks{
+		{path: "/", num: 11},
+		{path: "/user", num: 5},
+	}
+	check.check(t, tree)
 }
 
 func Test_github_Param8(t *testing.T) {

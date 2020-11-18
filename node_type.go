@@ -3,7 +3,7 @@
 
 package brouter
 
-type nodeType int
+type nodeType int8
 
 const (
 	empty nodeType = iota

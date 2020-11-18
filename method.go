@@ -4,11 +4,11 @@ import (
 	"errors"
 )
 
+var ErrMethod = errors.New("error method")
+
 type method struct {
 	method [7]*tree
 }
-
-var ErrMethod = errors.New("error method")
 
 func (m *method) init() {
 	for k := range m.method {
@@ -68,3 +68,30 @@ func (m *method) save(method, path string, h HandleFunc) {
 
 	m.method[index].insert(path, h)
 }
+
+/*
+type method struct {
+	method map[string]*tree
+}
+
+func (m *method) init() {
+	if m.method == nil {
+		m.method = make(map[string]*tree)
+	}
+
+	for _, k := range []string{"GET", "POST", "DELETE", "HEAD", "OPTIONS", "PUT", "PATCH"} {
+		if m.method[k] == nil {
+			m.method[k] = newTree()
+		}
+	}
+}
+
+func (m *method) getTree(method string) *tree {
+	t, _ := m.method[method]
+	return t
+}
+
+func (m *method) save(method, path string, h HandleFunc) {
+	m.method[method].insert(path, h)
+}
+*/

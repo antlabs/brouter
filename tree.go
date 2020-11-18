@@ -44,15 +44,15 @@ func (r *tree) lookup(path string) (HandleFunc, *Params) {
 
 // treeNode，查找树node
 type treeNode struct {
+	// 分段结构
+	segment
 	children []*treeNode
 	// 当前节点有特殊节点的儿子, param or wildcard
 	haveParamWildcardChild bool
-	// 分段结构
-	segment
 	// char和 children索引的关系
 	charIndex []byte
 	// 儿子(直接联系的子节点)个数，不计算跨代的孩子节点，儿子多的排前面
-	childNum int
+	childNum int32
 }
 
 // 获取param or wildcard 节点
@@ -182,10 +182,9 @@ func (n *treeNode) splitCurrentNode(i int) {
 	// 儿子变孙子
 	grandson := n.children
 	grandsonCharIndex := n.charIndex
-	grandsomChildNum := n.childNum
+	grandsomChildNum := n.childNum - 1
 	n.children = make([]*treeNode, 0, 1)
 	n.charIndex = make([]byte, 0, 1)
-	n.childNum = 1
 
 	splitSegment := segment{
 		path:     n.path[i:],
@@ -239,7 +238,7 @@ func (n *treeNode) splitNode(sm *segment, segIndex int, p path) (*treeNode, bool
 	if len(insertPath[i:]) > 0 {
 		nextNode, newNode := n.getChildrenNode2(insertPath[i])
 		if newNode {
-			n.childNum++
+			nextNode.childNum++
 		}
 		return nextNode, false
 	}
@@ -278,19 +277,19 @@ func (n *treeNode) insert(path string, h HandleFunc, p path) {
 
 		segment := p.segments[i]
 
-		//prevNode := n
+		prevNode := n
+		n.childNum++
+		fmt.Printf("for node:%p\n", n)
 		for {
 			// 1.直接插入
 			// 如果n.segment.isOrdinary() 为空，就可以直接插入到这个节点
 			// 注意:区分普通节点和变量节点
 			if n.nodeType.isEmpty() {
-				/*
-					fmt.Printf("0. isEmpty:  [%8s(:%s)]:[%s], [a:%p], [cn:%d]\n",
-						segment.path, segment.paramName, path, n, n.childNum)
-				*/
+				fmt.Printf("0. isEmpty:  [%8s(:%s)]:[%s], [a:%p], [cn:%d]\n",
+					segment.path, segment.paramName, path, n, n.childNum)
 				if next, ok := n.directInsert(segment, i+1, p); ok {
 					if next != nil {
-						n.childNum++
+						//next.childNum++
 					}
 					n = next
 					break
@@ -302,12 +301,13 @@ func (n *treeNode) insert(path string, h HandleFunc, p path) {
 			// 2,3,4 考虑下变量和可变参数
 			// 2.不需要分裂 node, 当前需要插入的path和n.path相同
 			if n.equal(segment) {
-				/*
-					fmt.Printf("2. equal:    [%8s(:%s)]:[%s], [a:%p], [cn:%d]\n",
-						segment.path, segment.paramName, path, n, n.childNum)
-				*/
+				fmt.Printf("2. equal:    [%8s(:%s)]:[%s], [a:%p], [cn:%d]\n",
+					segment.path, segment.paramName, path, n, n.childNum)
 				if n.handle == nil {
 					n.handle = segment.handle
+				}
+				if prevNode != n {
+					n.childNum++
 				}
 				n = n.getNextTreeNode(i+1, p)
 				break
@@ -317,32 +317,31 @@ func (n *treeNode) insert(path string, h HandleFunc, p path) {
 			// 这种情况比较复杂, 剔除重复前缀元素，重走上面流程
 			if len(n.path) < len(segment.path) && n.path == segment.path[:len(n.path)] {
 
-				/*
-					fmt.Printf("3. contain:  [%8s(:%s)]:[%s], [a:%p], [cn:%d], n.path:%s, segment.path%s\n",
-						segment.path, segment.paramName, path, n, n.childNum, n.path, segment.path)
-				*/
+				fmt.Printf("3. contain:  [%8s(:%s)]:[%s], [a:%p], [cn:%d], n.path:%s, segment.path%s\n",
+					segment.path, segment.paramName, path, n, n.childNum, n.path, segment.path)
 
 				segment.path = segment.path[len(n.path):]
 				n2, newNode := n.getChildrenNode2(segment.path[0])
-				if newNode {
+				if prevNode != n {
 					n.childNum++
+				}
+				if newNode {
+					n2.childNum++
 				}
 				n = n2
 				continue
 			}
 
 			// 4.分裂节点再插入
-			/*
-				fmt.Printf("4.splitNode: [%8s(:%s)]:[%s], [a:%p] [cn:%d]\n",
-					segment.path, segment.paramName, path, n, n.childNum)
-			*/
+			fmt.Printf("4.splitNode: [%8s(:%s)]:[%s], [a:%p] [cn:%d]\n",
+				segment.path, segment.paramName, path, n, n.childNum)
 			var next bool
 			if n, next = n.splitNode(&segment, i+1, p); next {
 				break
 			}
 		}
 
-		// TODO 排序
+		prevNode.sortChildren()
 	}
 }
 
@@ -361,6 +360,7 @@ next:
 			return nil, p
 		}
 
+		// 长度相等
 		if len(path) == len(n.path) {
 			return n.handle, p
 		}
@@ -461,7 +461,7 @@ func (n *treeNode) info() {
 
 	fmt.Printf("	children-number: [")
 	for i := 0; i < len(n.charIndex); i++ {
-		num := 0
+		num := int32(0)
 		if n.children[i] != nil {
 			num = n.children[i].childNum
 		}
@@ -505,6 +505,7 @@ func (n *treeNode) depthfirst(depth int, prev int) {
 		nodeName = ":" + n.paramName
 	}
 
+	//nodeName += fmt.Sprintf("[n:%d]", n.childNum)
 	addr := fmt.Sprintf("%p", n)
 	nodeName += fmt.Sprintf("[n:%d][a:%s]", n.childNum, addr[len(addr)-4:len(addr)])
 	// 打印节点名字
@@ -523,4 +524,73 @@ func (n *treeNode) depthfirst(depth int, prev int) {
 // 打印一颗数
 func (t *tree) info() {
 	t.root.depthfirst(0, 0)
+}
+
+// 查询节点, 测试用
+func (n *treeNode) lookupNode(path string) *treeNode {
+
+next:
+	for {
+
+		// 当前节点path大于剩余需要匹配的path，说明路径和该节点不匹配
+		if len(n.path) > len(path) {
+			return nil
+		}
+
+		// 当前节点path和需要匹配的路径比较下，如果不相等，返回空指针
+		if n.path != path[:len(n.path)] {
+			return nil
+		}
+
+		// 长度相等
+		if len(path) == len(n.path) {
+			return n
+		}
+
+		path = path[len(n.path):]
+
+		// 普通节点
+		if !n.haveParamWildcardChild {
+			for i, c := range n.charIndex {
+				if c == path[0] {
+					n = n.children[i]
+					continue next
+				}
+
+			}
+
+			return n
+
+		}
+
+		// 特殊节点
+		n = n.children[0]
+
+		if n.nodeType == param {
+			j := 0
+			for ; j < len(path) && path[j] != '/'; j++ {
+			}
+
+			if j == len(path) {
+				return n
+			}
+
+			if len(n.children) < 2 {
+				return nil
+			}
+
+			path = path[j:]
+			// TODO 排序可能会有冲突
+			n = n.children[1] // '/'
+
+			continue
+		}
+
+		if n.nodeType == wildcard {
+			return n
+		}
+
+	}
+
+	return n
 }

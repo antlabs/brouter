@@ -18,7 +18,7 @@ type testCase struct {
 
 type testCases []testCase
 
-func (tcs *testCases) run(t *testing.T) {
+func (tcs *testCases) run(t *testing.T) *tree {
 	d := newTree()
 	done := 0
 
@@ -26,7 +26,7 @@ func (tcs *testCases) run(t *testing.T) {
 		d.insert(tc.insertPath, func(w http.ResponseWriter, r *http.Request, p Params) {
 			done++
 		})
-		//d.debug(80, tc.insertPath, 0, 0, 0)
+		//d.info()
 	}
 
 	for k, tc := range *tcs {
@@ -75,4 +75,23 @@ func (tcs *testCases) run(t *testing.T) {
 	}
 
 	d.info()
+	return d
+}
+
+type childNum struct {
+	path string
+	num  int32
+}
+
+type childNumChecks []childNum
+
+func (c *childNumChecks) check(t *testing.T, tree *tree) {
+	for _, cn := range *c {
+		n := tree.root.lookupNode(cn.path)
+		assert.NotNil(t, n, fmt.Sprintf("-->lookup path:%s", cn.path))
+		if n == nil {
+			return
+		}
+		assert.Equal(t, n.childNum, cn.num, fmt.Sprintf("-->lookup path:%s", cn.path))
+	}
 }

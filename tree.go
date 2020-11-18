@@ -51,7 +51,7 @@ type treeNode struct {
 	haveParamWildcardChild bool
 	// char和 children索引的关系
 	charIndex []byte
-	// 儿子(直接联系的子节点)个数，不计算跨代的孩子节点，儿子多的排前面
+	// 计算这个节点被多少个path所拥有
 	childNum int32
 }
 

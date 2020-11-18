@@ -485,13 +485,6 @@ func (n *treeNode) childrenLen() (count int) {
 	return
 }
 
-func max(a, b int) int {
-	if a < b {
-		return b
-	}
-	return a
-}
-
 // 打印当前节点的子树
 // 有子节点用蓝色表示
 // 变量节点使用红色表示

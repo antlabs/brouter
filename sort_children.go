@@ -4,7 +4,7 @@ func (t *treeNode) sortChildren() {
 	for i := 1; i < len(t.children); i++ {
 		max := i
 		for j := i + 1; j < len(t.children); j++ {
-			if t.children[i].childNum < t.children[j].childNum {
+			if t.children[i].pathRef < t.children[j].pathRef {
 				max = j
 			}
 		}

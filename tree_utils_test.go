@@ -74,7 +74,7 @@ func (tcs *testCases) run(t *testing.T) *tree {
 		}
 	}
 
-	d.info()
+	// d.info() //显示tree的拓扑结构
 	return d
 }
 
@@ -92,6 +92,6 @@ func (c *childNumChecks) check(t *testing.T, tree *tree) {
 		if n == nil {
 			return
 		}
-		assert.Equal(t, n.childNum, cn.num, fmt.Sprintf("-->lookup path:%s", cn.path))
+		assert.Equal(t, n.pathRef, cn.num, fmt.Sprintf("-->lookup path:%s", cn.path))
 	}
 }

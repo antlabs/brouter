@@ -2,7 +2,13 @@
 [![Go](https://github.com/antlabs/brouter/workflows/Go/badge.svg)](https://github.com/antlabs/brouter/actions)
 [![codecov](https://codecov.io/gh/antlabs/brouter/branch/main/graph/badge.svg)](https://codecov.io/gh/antlabs/brouter)
 
-项目开始时只是一个新的尝试，看能否性能比httprouter。
+项目开始时只是一个新的尝试，看能否性能比httprouter更快。
+
+## feature
+**近似零拷贝** 只有在需要分配参数，才有可能从堆上分配内存。
+
+**高性能** 现在某些指标和httprouter差不多
+
 ## demo
 ```go
 package main
